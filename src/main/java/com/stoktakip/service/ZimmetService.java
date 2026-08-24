@@ -65,8 +65,6 @@ public class ZimmetService {
         Envanter envanter = envanteriKilitle(envanterGuid);
         PersonelZimmetHareket aktif = aktifZimmet(envanterGuid)
             .orElseThrow(() -> new BusinessRuleException("Envanterin aktif personel zimmeti bulunamadi"));
-        aktif.setAktif(false);
-        personelHareketRepository.save(aktif);
 
         if (talep.depoGuid() != null && !talep.depoGuid().isBlank()) {
             envanter.setDepo(depo(talep.depoGuid()));
@@ -88,8 +86,12 @@ public class ZimmetService {
         Envanter envanter = envanteriKilitle(envanterGuid);
         Depo mevcutDepo = envanter.getDepo();
         aktifZimmet(envanterGuid).ifPresent(aktif -> {
-            aktif.setAktif(false);
-            personelHareketRepository.save(aktif);
+            PersonelZimmetHareket iade = yeniPersonelHareket(envanter, ZimmetHareketTipi.IADE);
+            iade.setPersonelKodu(aktif.getPersonelKodu());
+            iade.setAciklama(talep.aciklama());
+            iade.setIslemYapanPersonel(talep.islemYapanPersonel());
+            iade.setAktif(false);
+            personelHareketRepository.save(iade);
         });
         Depo gidecegiDepo = depo(talep.gidecegiDepoGuid());
         envanter.setDepo(gidecegiDepo);
@@ -122,7 +124,9 @@ public class ZimmetService {
     }
 
     private Optional<PersonelZimmetHareket> aktifZimmet(String envanterGuid) {
-        return personelHareketRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc(envanterGuid);
+        return personelHareketRepository.findFirstByEnvanterGuidOrderByIdDesc(envanterGuid)
+            .filter(hareket -> hareket.getHareketTipi() == ZimmetHareketTipi.PERSONELE_ZIMMET)
+            .filter(hareket -> Boolean.TRUE.equals(hareket.getAktif()));
     }
 
     private PersonelZimmetHareket yeniPersonelHareket(Envanter envanter, ZimmetHareketTipi tip) {

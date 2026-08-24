@@ -59,7 +59,7 @@ class ZimmetServiceTest {
     void demirbasPersoneleZimmetlenirVeIadeAlinir() {
         Envanter demirbas = envanter("demirbas-1", EnvanterTuru.DEMIRBAS);
         when(envanterRepository.findByGuidForUpdate("demirbas-1")).thenReturn(Optional.of(demirbas));
-        when(personelRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc("demirbas-1"))
+        when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("demirbas-1"))
             .thenReturn(Optional.empty());
 
         var yanit = service.personeleZimmetle(talep("demirbas-1", "P-A"));
@@ -70,37 +70,37 @@ class ZimmetServiceTest {
         assertThat(yanit.hareketTipi()).isEqualTo(ZimmetHareketTipi.PERSONELE_ZIMMET);
 
         PersonelZimmetHareket aktif = aktifZimmet(demirbas, "P-A");
-        when(personelRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc("demirbas-1"))
+        when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("demirbas-1"))
             .thenReturn(Optional.of(aktif));
         var iade = service.iadeAl(new IadeTalebi("demirbas-1", null, null, "operator"));
 
         assertThat(iade.hareketTipi()).isEqualTo(ZimmetHareketTipi.IADE);
-        assertThat(aktif.getAktif()).isFalse();
+        assertThat(aktif.getAktif()).isTrue();
     }
 
     @Test
     void sarfPersoneleZimmetlenirVeIadeAlinir() {
         Envanter sarf = envanter("sarf-1", EnvanterTuru.SARF);
         when(envanterRepository.findByGuidForUpdate("sarf-1")).thenReturn(Optional.of(sarf));
-        when(personelRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc("sarf-1"))
+        when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("sarf-1"))
             .thenReturn(Optional.empty());
         service.personeleZimmetle(talep("sarf-1", "P-S"));
 
         PersonelZimmetHareket aktif = aktifZimmet(sarf, "P-S");
-        when(personelRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc("sarf-1"))
+        when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("sarf-1"))
             .thenReturn(Optional.of(aktif));
         var iade = service.iadeAl(new IadeTalebi("sarf-1", null, null, "operator"));
 
         assertThat(iade.envanterTuru()).isEqualTo("SARF");
         assertThat(iade.hareketTipi()).isEqualTo(ZimmetHareketTipi.IADE);
-        assertThat(aktif.getAktif()).isFalse();
+        assertThat(aktif.getAktif()).isTrue();
     }
 
     @Test
     void ayniEnvanterEszamanliIkinciAktifZimmeteVerilemez() {
         Envanter envanter = envanter("envanter-2", EnvanterTuru.DEMIRBAS);
         when(envanterRepository.findByGuidForUpdate("envanter-2")).thenReturn(Optional.of(envanter));
-        when(personelRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc("envanter-2"))
+        when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("envanter-2"))
             .thenReturn(Optional.of(aktifZimmet(envanter, "PERSONEL-A")));
 
         assertThatThrownBy(() -> service.personeleZimmetle(talep("envanter-2", "PERSONEL-B")))
@@ -115,7 +115,7 @@ class ZimmetServiceTest {
         Depo yeniDepo = depo("depo-b");
         envanter.setDepo(eskiDepo);
         when(envanterRepository.findByGuidForUpdate("envanter-depo")).thenReturn(Optional.of(envanter));
-        when(personelRepository.findFirstByEnvanterGuidAndAktifTrueOrderByIdDesc("envanter-depo"))
+        when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("envanter-depo"))
             .thenReturn(Optional.empty());
         when(depoRepository.findById("depo-b")).thenReturn(Optional.of(yeniDepo));
 
@@ -152,6 +152,7 @@ class ZimmetServiceTest {
         hareket.setId(99L);
         hareket.setEnvanter(envanter);
         hareket.setPersonelKodu(personel);
+        hareket.setHareketTipi(ZimmetHareketTipi.PERSONELE_ZIMMET);
         hareket.setAktif(true);
         return hareket;
     }
