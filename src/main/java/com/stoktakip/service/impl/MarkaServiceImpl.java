@@ -2,6 +2,7 @@ package com.stoktakip.service.impl;
 
 import com.stoktakip.dto.MarkaCreateRequest;
 import com.stoktakip.dto.MarkaResponse;
+import com.stoktakip.dto.MarkaUpdateRequest;
 import com.stoktakip.entity.Marka;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
@@ -28,8 +29,11 @@ public class MarkaServiceImpl implements MarkaService {
     }
 
     @Override
-    public MarkaResponse getById(String guid) {
-        return toResponse(find(guid));
+    public List<MarkaResponse> searchByName(String adi) {
+        String aramaMetni = normalizeSearchTerm(adi);
+        return repository.findByMarkaAdiContainingIgnoreCase(aramaMetni).stream()
+            .map(this::toResponse)
+            .toList();
     }
 
     @Override
@@ -37,6 +41,15 @@ public class MarkaServiceImpl implements MarkaService {
     public MarkaResponse create(MarkaCreateRequest request) {
         Marka entity = new Marka();
         entity.setGuid(UUID.randomUUID().toString());
+        entity.setMarkaAdi(request.markaAdi().trim());
+        entity.setAciklama(request.aciklama());
+        return toResponse(repository.save(entity));
+    }
+
+    @Override
+    @Transactional
+    public MarkaResponse update(String guid, MarkaUpdateRequest request) {
+        Marka entity = find(guid);
         entity.setMarkaAdi(request.markaAdi().trim());
         entity.setAciklama(request.aciklama());
         return toResponse(repository.save(entity));
@@ -57,6 +70,13 @@ public class MarkaServiceImpl implements MarkaService {
     private Marka find(String guid) {
         return repository.findById(guid)
             .orElseThrow(() -> new ResourceNotFoundException("Marka bulunamadı: " + guid));
+    }
+
+    private static String normalizeSearchTerm(String adi) {
+        if (adi == null || adi.isBlank()) {
+            throw new BusinessRuleException("adi boş olamaz");
+        }
+        return adi.trim();
     }
 
     private MarkaResponse toResponse(Marka entity) {

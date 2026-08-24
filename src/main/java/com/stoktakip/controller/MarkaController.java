@@ -2,6 +2,7 @@ package com.stoktakip.controller;
 
 import com.stoktakip.dto.MarkaCreateRequest;
 import com.stoktakip.dto.MarkaResponse;
+import com.stoktakip.dto.MarkaUpdateRequest;
 import com.stoktakip.service.MarkaService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -10,8 +11,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,13 +30,23 @@ public class MarkaController {
     @GetMapping
     public List<MarkaResponse> getAll() { return service.getAll(); }
 
-    @GetMapping("/{guid}")
-    public MarkaResponse getById(@PathVariable String guid) { return service.getById(guid); }
+    @GetMapping("/search")
+    public List<MarkaResponse> search(@RequestParam String adi) {
+        return service.searchByName(adi);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MarkaResponse create(@Valid @RequestBody MarkaCreateRequest request) {
         return service.create(request);
+    }
+
+    @PutMapping("/{guid}")
+    public MarkaResponse update(
+        @PathVariable String guid,
+        @Valid @RequestBody MarkaUpdateRequest request
+    ) {
+        return service.update(guid, request);
     }
 
     @DeleteMapping("/{guid}")

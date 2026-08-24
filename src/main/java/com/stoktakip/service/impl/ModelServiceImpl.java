@@ -2,6 +2,7 @@ package com.stoktakip.service.impl;
 
 import com.stoktakip.dto.ModelCreateRequest;
 import com.stoktakip.dto.ModelResponse;
+import com.stoktakip.dto.ModelUpdateRequest;
 import com.stoktakip.entity.Kategori;
 import com.stoktakip.entity.Marka;
 import com.stoktakip.entity.Model;
@@ -37,8 +38,22 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
-    public ModelResponse getById(String guid) {
-        return toResponse(find(guid));
+    public List<ModelResponse> getByMarkaGuid(String markaGuid) {
+        String guid = markaGuid(markaGuid);
+        findMarka(guid);
+        return repository.findByMarka_Guid(guid).stream()
+            .map(this::toResponse)
+            .toList();
+    }
+
+    @Override
+    public List<ModelResponse> searchByMarkaAndName(String markaGuid, String adi) {
+        String guid = markaGuid(markaGuid);
+        String aramaMetni = normalizeSearchTerm(adi);
+        findMarka(guid);
+        return repository.findByMarka_GuidAndModelAdiContainingIgnoreCase(guid, aramaMetni).stream()
+            .map(this::toResponse)
+            .toList();
     }
 
     @Override
@@ -48,8 +63,18 @@ public class ModelServiceImpl implements ModelService {
         entity.setGuid(UUID.randomUUID().toString());
         entity.setModelAdi(request.modelAdi().trim());
         entity.setAciklama(request.aciklama());
-        entity.setMarka(resolveMarka(request.markaGuid()));
+        entity.setMarka(findMarka(markaGuid(request.markaGuid())));
         entity.setKategori(resolveKategori(request.kategoriGuid()));
+        return toResponse(repository.save(entity));
+    }
+
+    @Override
+    @Transactional
+    public ModelResponse update(String guid, ModelUpdateRequest request) {
+        Model entity = find(guid);
+        entity.setModelAdi(request.modelAdi().trim());
+        entity.setAciklama(request.aciklama());
+        entity.setMarka(findMarka(markaGuid(request.markaGuid())));
         return toResponse(repository.save(entity));
     }
 
@@ -70,8 +95,7 @@ public class ModelServiceImpl implements ModelService {
             .orElseThrow(() -> new ResourceNotFoundException("Model bulunamadı: " + guid));
     }
 
-    private Marka resolveMarka(String guid) {
-        if (guid == null || guid.isBlank()) return null;
+    private Marka findMarka(String guid) {
         return markaRepository.findById(guid)
             .orElseThrow(() -> new ResourceNotFoundException("Marka bulunamadı: " + guid));
     }
@@ -82,10 +106,25 @@ public class ModelServiceImpl implements ModelService {
             .orElseThrow(() -> new ResourceNotFoundException("Kategori bulunamadı: " + guid));
     }
 
+    private static String normalizeSearchTerm(String adi) {
+        if (adi == null || adi.isBlank()) {
+            throw new BusinessRuleException("adi boş olamaz");
+        }
+        return adi.trim();
+    }
+
+    private static String markaGuid(String markaGuid) {
+        if (markaGuid == null || markaGuid.isBlank()) {
+            throw new BusinessRuleException("markaGuid boş olamaz");
+        }
+        return markaGuid.trim();
+    }
+
     private ModelResponse toResponse(Model entity) {
         String markaGuid = entity.getMarka() == null ? null : entity.getMarka().getGuid();
+        String markaAdi = entity.getMarka() == null ? null : entity.getMarka().getMarkaAdi();
         String kategoriGuid = entity.getKategori() == null ? null : entity.getKategori().getGuid();
         return new ModelResponse(entity.getGuid(), entity.getModelAdi(), entity.getAciklama(),
-            markaGuid, kategoriGuid, entity.getAktif());
+            markaGuid, markaAdi, kategoriGuid, entity.getAktif());
     }
 }

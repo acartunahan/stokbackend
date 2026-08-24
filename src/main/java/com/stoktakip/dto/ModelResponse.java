@@ -5,6 +5,7 @@ public record ModelResponse(
     String modelAdi,
     String aciklama,
     String markaGuid,
+    String markaAdi,
     String kategoriGuid,
     Boolean aktif
 ) {
