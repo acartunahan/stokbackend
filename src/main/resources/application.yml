@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: stoktakip-backend
+  datasource:
+    url: ${TARGET_DB_URL}
+    username: ${TARGET_DB_USERNAME}
+    password: ${TARGET_DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+        jdbc:
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
+
+server:
+  shutdown: graceful
