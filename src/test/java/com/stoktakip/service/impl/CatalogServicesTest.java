@@ -14,6 +14,7 @@ import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.AparatRepository;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.MarkaRepository;
+import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ class CatalogServicesTest {
     @Mock EnvanterRepository envanterRepository;
     @Mock MarkaRepository markaRepository;
     @Mock AparatRepository aparatRepository;
+    @Mock PersonelZimmetHareketRepository personelZimmetHareketRepository;
 
     @Test
     void sarfListesiRepositorySeviyesindeFiltrelenir() {
@@ -35,7 +37,8 @@ class CatalogServicesTest {
         sarf.setEnvanterTuru(EnvanterTuru.SARF);
         when(envanterRepository.findByEnvanterTuru(EnvanterTuru.SARF)).thenReturn(List.of(sarf));
 
-        var result = new EnvanterServiceImpl(envanterRepository).getSarflar();
+        var result = new EnvanterServiceImpl(
+            envanterRepository, personelZimmetHareketRepository).getSarflar();
 
         assertThat(result).singleElement().extracting("guid").isEqualTo("env-1");
         verify(envanterRepository).findByEnvanterTuru(EnvanterTuru.SARF);

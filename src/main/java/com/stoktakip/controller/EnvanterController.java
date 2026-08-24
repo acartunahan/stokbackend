@@ -1,14 +1,16 @@
 package com.stoktakip.controller;
 
 import com.stoktakip.dto.EnvanterResponse;
+import com.stoktakip.dto.EnvanterZimmetDurumuResponse;
 import com.stoktakip.service.EnvanterService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/envanter")
+@RequestMapping({"/api/envanter", "/api/envanterler"})
 public class EnvanterController {
     private final EnvanterService service;
 
@@ -29,5 +31,12 @@ public class EnvanterController {
     @GetMapping("/demirbas")
     public List<EnvanterResponse> getDemirbaslar() {
         return service.getDemirbaslar();
+    }
+
+    @GetMapping("/{envanterGuid}/zimmet-durumu")
+    public EnvanterZimmetDurumuResponse getZimmetDurumu(
+        @PathVariable String envanterGuid
+    ) {
+        return service.getZimmetDurumu(envanterGuid);
     }
 }

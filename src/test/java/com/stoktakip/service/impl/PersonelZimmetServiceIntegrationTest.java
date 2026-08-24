@@ -13,6 +13,7 @@ import com.stoktakip.repository.AparatRepository;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.PersonelZimmetService;
+import com.stoktakip.service.EnvanterService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 class PersonelZimmetServiceIntegrationTest {
 
     @Autowired PersonelZimmetService service;
+    @Autowired EnvanterService envanterService;
     @Autowired EnvanterRepository envanterRepository;
     @Autowired PersonelZimmetHareketRepository hareketRepository;
     @Autowired AparatRepository aparatRepository;
@@ -40,10 +42,13 @@ class PersonelZimmetServiceIntegrationTest {
         assertThat(service.getPersonelEnvanterleri("P-1"))
             .extracting(response -> response.envanterId())
             .containsExactly(envanter.getGuid());
+        assertThat(envanterService.getZimmetDurumu(envanter.getGuid()).personelKodu())
+            .isEqualTo("P-1");
 
         service.iadeEt(
             "P-1", envanter.getGuid(), new PersonelZimmetIadeRequest(null, "operator"));
         assertThat(service.getPersonelEnvanterleri("P-1")).isEmpty();
+        assertThat(envanterService.getZimmetDurumu(envanter.getGuid()).zimmetli()).isFalse();
         assertThat(service.getZimmetGecmisi("P-1"))
             .extracting(response -> response.hareketTipi())
             .containsExactly(ZimmetHareketTipi.IADE, ZimmetHareketTipi.PERSONELE_ZIMMET);
@@ -54,6 +59,8 @@ class PersonelZimmetServiceIntegrationTest {
         assertThat(service.getPersonelEnvanterleri("P-2"))
             .extracting(response -> response.envanterId())
             .containsExactly(envanter.getGuid());
+        assertThat(envanterService.getZimmetDurumu(envanter.getGuid()).personelKodu())
+            .isEqualTo("P-2");
 
         var tumHareketler = hareketRepository.findByEnvanterGuidOrderByIdDesc(envanter.getGuid());
         assertThat(tumHareketler).hasSize(3);
