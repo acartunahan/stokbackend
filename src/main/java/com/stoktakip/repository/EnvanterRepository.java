@@ -8,11 +8,21 @@ import java.util.Optional;
 import java.util.List;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.query.Param;
 
 public interface EnvanterRepository extends JpaRepository<Envanter, String> {
 
+    @EntityGraph(attributePaths = {"depo", "model"})
     List<Envanter> findByEnvanterTuru(EnvanterTuru envanterTuru);
+
+    @Override
+    @EntityGraph(attributePaths = {"depo", "model"})
+    List<Envanter> findAll();
+
+    @EntityGraph(attributePaths = {"depo", "model"})
+    @Query("select e from Envanter e where e.guid = :guid")
+    Optional<Envanter> findDetayByGuid(@Param("guid") String guid);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from Envanter e where e.guid = :guid")

@@ -5,11 +5,15 @@ import com.stoktakip.dto.PersonelZimmetCreateRequest;
 import com.stoktakip.dto.PersonelZimmetGecmisiResponse;
 import com.stoktakip.dto.PersonelZimmetIadeRequest;
 import com.stoktakip.entity.Envanter;
+import com.stoktakip.entity.Depo;
+import com.stoktakip.entity.DepoZimmetHareket;
 import com.stoktakip.entity.PersonelZimmetHareket;
 import com.stoktakip.enums.ZimmetHareketTipi;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.EnvanterRepository;
+import com.stoktakip.repository.DepoRepository;
+import com.stoktakip.repository.DepoZimmetHareketRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.PersonelZimmetService;
 import java.util.List;
@@ -24,13 +28,19 @@ public class PersonelZimmetServiceImpl implements PersonelZimmetService {
 
     private final PersonelZimmetHareketRepository hareketRepository;
     private final EnvanterRepository envanterRepository;
+    private final DepoRepository depoRepository;
+    private final DepoZimmetHareketRepository depoHareketRepository;
 
     public PersonelZimmetServiceImpl(
         PersonelZimmetHareketRepository hareketRepository,
-        EnvanterRepository envanterRepository
+        EnvanterRepository envanterRepository,
+        DepoRepository depoRepository,
+        DepoZimmetHareketRepository depoHareketRepository
     ) {
         this.hareketRepository = hareketRepository;
         this.envanterRepository = envanterRepository;
+        this.depoRepository = depoRepository;
+        this.depoHareketRepository = depoHareketRepository;
     }
 
     @Override
@@ -69,6 +79,9 @@ public class PersonelZimmetServiceImpl implements PersonelZimmetService {
         }
         String envanterId = envanterId(request.envanterId());
         Envanter envanter = envanteriKilitle(envanterId);
+        if (envanter.getDepo() == null) {
+            throw new BusinessRuleException("Envanter bir depoda bulunmadığı için personele zimmetlenemez");
+        }
         sonHareket(envanterId).ifPresent(son -> {
             if (son.getHareketTipi() == ZimmetHareketTipi.PERSONELE_ZIMMET
                 && Boolean.TRUE.equals(son.getAktif())) {
@@ -105,11 +118,29 @@ public class PersonelZimmetServiceImpl implements PersonelZimmetService {
         if (!kod.equals(son.getPersonelKodu())) {
             throw new BusinessRuleException("Envanter bu personele zimmetli degildir");
         }
+        if (request.depoGuid() == null || request.depoGuid().isBlank()) {
+            throw new BusinessRuleException("depoGuid zorunludur");
+        }
+        String depoGuid = request.depoGuid().trim();
+        Depo depo = depoRepository.findById(depoGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadi: " + depoGuid));
+        envanter.setDepo(depo);
 
         PersonelZimmetHareket iade = yeniHareket(
             envanter, kod, ZimmetHareketTipi.IADE,
             request.aciklama(), request.islemYapanPersonel(), false);
-        return response(hareketRepository.save(iade));
+        PersonelZimmetHareket kaydedilen = hareketRepository.save(iade);
+        DepoZimmetHareket depoHareketi = new DepoZimmetHareket();
+        depoHareketi.setEnvanter(envanter);
+        depoHareketi.setHareketTipi(ZimmetHareketTipi.IADE);
+        depoHareketi.setZimmetTuru(envanter.getEnvanterTuru().name());
+        depoHareketi.setAdet(1L);
+        depoHareketi.setTur("IADE");
+        depoHareketi.setGidecegiDepo(depo);
+        depoHareketi.setAciklama(request.aciklama());
+        depoHareketi.setIslemYapanPersonel(request.islemYapanPersonel());
+        depoHareketRepository.save(depoHareketi);
+        return response(kaydedilen);
     }
 
     private Optional<PersonelZimmetHareket> sonHareket(String envanterId) {

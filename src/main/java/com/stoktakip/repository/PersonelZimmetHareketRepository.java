@@ -15,6 +15,8 @@ public interface PersonelZimmetHareketRepository extends JpaRepository<PersonelZ
 
     Optional<PersonelZimmetHareket> findFirstByEnvanterGuidOrderByIdDesc(String guid);
 
+    boolean existsByEnvanterGuid(String guid);
+
     @Query("""
         select new com.stoktakip.dto.PersonelEnvanterResponse(
             e.guid, e.envanterAdi, e.envanterTuru, marka.markaAdi, model.modelAdi,

@@ -38,7 +38,11 @@ class CatalogServicesTest {
         when(envanterRepository.findByEnvanterTuru(EnvanterTuru.SARF)).thenReturn(List.of(sarf));
 
         var result = new EnvanterServiceImpl(
-            envanterRepository, personelZimmetHareketRepository).getSarflar();
+            envanterRepository, personelZimmetHareketRepository,
+            org.mockito.Mockito.mock(com.stoktakip.repository.DepoRepository.class),
+            org.mockito.Mockito.mock(com.stoktakip.repository.ModelRepository.class),
+            org.mockito.Mockito.mock(com.stoktakip.repository.DepoZimmetHareketRepository.class)
+        ).getSarflar();
 
         assertThat(result).singleElement().extracting("guid").isEqualTo("env-1");
         verify(envanterRepository).findByEnvanterTuru(EnvanterTuru.SARF);

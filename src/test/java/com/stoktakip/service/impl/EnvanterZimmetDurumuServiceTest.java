@@ -13,6 +13,9 @@ import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
+import com.stoktakip.repository.DepoRepository;
+import com.stoktakip.repository.DepoZimmetHareketRepository;
+import com.stoktakip.repository.ModelRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,12 +29,16 @@ class EnvanterZimmetDurumuServiceTest {
 
     @Mock EnvanterRepository envanterRepository;
     @Mock PersonelZimmetHareketRepository hareketRepository;
+    @Mock DepoRepository depoRepository;
+    @Mock ModelRepository modelRepository;
+    @Mock DepoZimmetHareketRepository depoHareketRepository;
 
     private EnvanterServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new EnvanterServiceImpl(envanterRepository, hareketRepository);
+        service = new EnvanterServiceImpl(envanterRepository, hareketRepository,
+            depoRepository, modelRepository, depoHareketRepository);
     }
 
     @Test
@@ -41,7 +48,7 @@ class EnvanterZimmetDurumuServiceTest {
         PersonelZimmetHareket hareket = hareket(
             envanter, 42L, "9500207", ZimmetHareketTipi.PERSONELE_ZIMMET, true);
         hareket.setOlusturmaTarihi(tarih);
-        when(envanterRepository.findById("env-1")).thenReturn(Optional.of(envanter));
+        when(envanterRepository.findDetayByGuid("env-1")).thenReturn(Optional.of(envanter));
         when(hareketRepository.findFirstByEnvanterGuidOrderByIdDesc("env-1"))
             .thenReturn(Optional.of(hareket));
 
@@ -57,7 +64,7 @@ class EnvanterZimmetDurumuServiceTest {
     @Test
     void sonHareketIadeIseZimmetsizDoner() {
         Envanter envanter = envanter("env-1");
-        when(envanterRepository.findById("env-1")).thenReturn(Optional.of(envanter));
+        when(envanterRepository.findDetayByGuid("env-1")).thenReturn(Optional.of(envanter));
         when(hareketRepository.findFirstByEnvanterGuidOrderByIdDesc("env-1"))
             .thenReturn(Optional.of(hareket(
                 envanter, 43L, "9500207", ZimmetHareketTipi.IADE, false)));
@@ -72,7 +79,7 @@ class EnvanterZimmetDurumuServiceTest {
     @Test
     void pasifPersonelZimmetiGuncelKabulEdilmez() {
         Envanter envanter = envanter("env-1");
-        when(envanterRepository.findById("env-1")).thenReturn(Optional.of(envanter));
+        when(envanterRepository.findDetayByGuid("env-1")).thenReturn(Optional.of(envanter));
         when(hareketRepository.findFirstByEnvanterGuidOrderByIdDesc("env-1"))
             .thenReturn(Optional.of(hareket(
                 envanter, 44L, "P-ESKI", ZimmetHareketTipi.PERSONELE_ZIMMET, false)));
@@ -83,7 +90,7 @@ class EnvanterZimmetDurumuServiceTest {
     @Test
     void hareketYoksaZimmetsizDoner() {
         Envanter envanter = envanter("env-1");
-        when(envanterRepository.findById("env-1")).thenReturn(Optional.of(envanter));
+        when(envanterRepository.findDetayByGuid("env-1")).thenReturn(Optional.of(envanter));
         when(hareketRepository.findFirstByEnvanterGuidOrderByIdDesc("env-1"))
             .thenReturn(Optional.empty());
 
@@ -96,7 +103,7 @@ class EnvanterZimmetDurumuServiceTest {
 
     @Test
     void olmayanEnvanterKontrolluHataVerir() {
-        when(envanterRepository.findById("yok")).thenReturn(Optional.empty());
+        when(envanterRepository.findDetayByGuid("yok")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getZimmetDurumu("yok"))
             .isInstanceOf(ResourceNotFoundException.class)

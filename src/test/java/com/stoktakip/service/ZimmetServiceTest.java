@@ -72,7 +72,10 @@ class ZimmetServiceTest {
         PersonelZimmetHareket aktif = aktifZimmet(demirbas, "P-A");
         when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("demirbas-1"))
             .thenReturn(Optional.of(aktif));
-        var iade = service.iadeAl(new IadeTalebi("demirbas-1", null, null, "operator"));
+        Depo iadeDeposu = depo("depo-iade");
+        when(depoRepository.findById("depo-iade")).thenReturn(Optional.of(iadeDeposu));
+        var iade = service.iadeAl(new IadeTalebi(
+            "demirbas-1", "depo-iade", null, "operator"));
 
         assertThat(iade.hareketTipi()).isEqualTo(ZimmetHareketTipi.IADE);
         assertThat(aktif.getAktif()).isTrue();
@@ -89,7 +92,10 @@ class ZimmetServiceTest {
         PersonelZimmetHareket aktif = aktifZimmet(sarf, "P-S");
         when(personelRepository.findFirstByEnvanterGuidOrderByIdDesc("sarf-1"))
             .thenReturn(Optional.of(aktif));
-        var iade = service.iadeAl(new IadeTalebi("sarf-1", null, null, "operator"));
+        Depo iadeDeposu = depo("depo-iade");
+        when(depoRepository.findById("depo-iade")).thenReturn(Optional.of(iadeDeposu));
+        var iade = service.iadeAl(new IadeTalebi(
+            "sarf-1", "depo-iade", null, "operator"));
 
         assertThat(iade.envanterTuru()).isEqualTo("SARF");
         assertThat(iade.hareketTipi()).isEqualTo(ZimmetHareketTipi.IADE);
@@ -137,6 +143,7 @@ class ZimmetServiceTest {
         envanter.setGuid(guid);
         envanter.setEnvanterTuru(tur);
         envanter.setEnvanterAdi(guid);
+        envanter.setDepo(depo("depo-baslangic"));
         return envanter;
     }
 

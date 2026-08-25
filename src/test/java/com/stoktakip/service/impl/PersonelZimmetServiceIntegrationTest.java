@@ -6,11 +6,13 @@ import com.stoktakip.dto.PersonelZimmetCreateRequest;
 import com.stoktakip.dto.PersonelZimmetIadeRequest;
 import com.stoktakip.entity.Aparat;
 import com.stoktakip.entity.Envanter;
+import com.stoktakip.entity.Depo;
 import com.stoktakip.entity.PersonelZimmetHareket;
 import com.stoktakip.enums.EnvanterTuru;
 import com.stoktakip.enums.ZimmetHareketTipi;
 import com.stoktakip.repository.AparatRepository;
 import com.stoktakip.repository.EnvanterRepository;
+import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.PersonelZimmetService;
 import com.stoktakip.service.EnvanterService;
@@ -26,6 +28,7 @@ class PersonelZimmetServiceIntegrationTest {
     @Autowired PersonelZimmetService service;
     @Autowired EnvanterService envanterService;
     @Autowired EnvanterRepository envanterRepository;
+    @Autowired DepoRepository depoRepository;
     @Autowired PersonelZimmetHareketRepository hareketRepository;
     @Autowired AparatRepository aparatRepository;
 
@@ -35,6 +38,8 @@ class PersonelZimmetServiceIntegrationTest {
         envanter.setGuid("integration-envanter");
         envanter.setEnvanterAdi("Integration Laptop");
         envanter.setEnvanterTuru(EnvanterTuru.DEMIRBAS);
+        Depo depo = depo("integration-depo");
+        envanter.setDepo(depo);
         envanterRepository.saveAndFlush(envanter);
 
         service.zimmetOlustur(
@@ -46,7 +51,8 @@ class PersonelZimmetServiceIntegrationTest {
             .isEqualTo("P-1");
 
         service.iadeEt(
-            "P-1", envanter.getGuid(), new PersonelZimmetIadeRequest(null, "operator"));
+            "P-1", envanter.getGuid(), new PersonelZimmetIadeRequest(
+                depo.getGuid(), null, "operator"));
         assertThat(service.getPersonelEnvanterleri("P-1")).isEmpty();
         assertThat(envanterService.getZimmetDurumu(envanter.getGuid()).zimmetli()).isFalse();
         assertThat(service.getZimmetGecmisi("P-1"))
@@ -98,5 +104,14 @@ class PersonelZimmetServiceIntegrationTest {
                 assertThat(response.aparatId()).isEqualTo(aparat.getGuid());
                 assertThat(response.aparatAdi()).isEqualTo("Klavye");
             });
+    }
+
+    private Depo depo(String guid) {
+        return depoRepository.findById(guid).orElseGet(() -> {
+            Depo depo = new Depo();
+            depo.setGuid(guid);
+            depo.setAd(guid);
+            return depoRepository.saveAndFlush(depo);
+        });
     }
 }

@@ -1,17 +1,26 @@
 package com.stoktakip.service.impl;
 
 import com.stoktakip.dto.EnvanterResponse;
+import com.stoktakip.dto.EnvanterCreateRequest;
+import com.stoktakip.dto.EnvanterUpdateRequest;
 import com.stoktakip.dto.EnvanterZimmetDurumuResponse;
+import com.stoktakip.entity.Depo;
+import com.stoktakip.entity.DepoZimmetHareket;
 import com.stoktakip.entity.Envanter;
+import com.stoktakip.entity.Model;
 import com.stoktakip.entity.PersonelZimmetHareket;
 import com.stoktakip.enums.EnvanterTuru;
 import com.stoktakip.enums.ZimmetHareketTipi;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.EnvanterRepository;
+import com.stoktakip.repository.DepoRepository;
+import com.stoktakip.repository.DepoZimmetHareketRepository;
+import com.stoktakip.repository.ModelRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.EnvanterService;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,13 +29,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class EnvanterServiceImpl implements EnvanterService {
     private final EnvanterRepository repository;
     private final PersonelZimmetHareketRepository hareketRepository;
+    private final DepoRepository depoRepository;
+    private final ModelRepository modelRepository;
+    private final DepoZimmetHareketRepository depoHareketRepository;
 
     public EnvanterServiceImpl(
         EnvanterRepository repository,
-        PersonelZimmetHareketRepository hareketRepository
+        PersonelZimmetHareketRepository hareketRepository,
+        DepoRepository depoRepository,
+        ModelRepository modelRepository,
+        DepoZimmetHareketRepository depoHareketRepository
     ) {
         this.repository = repository;
         this.hareketRepository = hareketRepository;
+        this.depoRepository = depoRepository;
+        this.modelRepository = modelRepository;
+        this.depoHareketRepository = depoHareketRepository;
     }
 
     @Override
@@ -45,9 +63,71 @@ public class EnvanterServiceImpl implements EnvanterService {
     }
 
     @Override
+    public EnvanterResponse getById(String guid) {
+        String normalizedGuid = normalizeGuid(guid);
+        return toResponse(repository.findDetayByGuid(normalizedGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadı: " + normalizedGuid)));
+    }
+
+    @Override
+    @Transactional
+    public EnvanterResponse create(EnvanterCreateRequest request) {
+        if (request == null) {
+            throw new BusinessRuleException("Envanter oluşturma talebi zorunludur");
+        }
+        Depo depo = depo(request.depoGuid());
+        Envanter envanter = new Envanter();
+        envanter.setGuid(UUID.randomUUID().toString());
+        metadataGuncelle(envanter, request.envanterAdi(), request.envanterTuru(), request.modelGuid(),
+            request.demirbasNumarasi(), request.seriNo(), request.barkod(), request.sube(),
+            request.aciklama(), request.ilSubeDaireBaskanlikNumarasi());
+        envanter.setDepo(depo);
+        Envanter kaydedilen = repository.save(envanter);
+
+        DepoZimmetHareket ilkHareket = new DepoZimmetHareket();
+        ilkHareket.setEnvanter(kaydedilen);
+        ilkHareket.setHareketTipi(ZimmetHareketTipi.DEPO_TRANSFERI);
+        ilkHareket.setZimmetTuru(kaydedilen.getEnvanterTuru().name());
+        ilkHareket.setAdet(1L);
+        ilkHareket.setGidecegiDepo(depo);
+        ilkHareket.setTur("GIRIS");
+        ilkHareket.setAciklama("İlk depo girişi");
+        depoHareketRepository.save(ilkHareket);
+        return toResponse(kaydedilen);
+    }
+
+    @Override
+    @Transactional
+    public EnvanterResponse update(String guid, EnvanterUpdateRequest request) {
+        if (request == null) {
+            throw new BusinessRuleException("Envanter güncelleme talebi zorunludur");
+        }
+        String normalizedGuid = normalizeGuid(guid);
+        Envanter envanter = repository.findById(normalizedGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadı: " + normalizedGuid));
+        metadataGuncelle(envanter, request.envanterAdi(), request.envanterTuru(), request.modelGuid(),
+            request.demirbasNumarasi(), request.seriNo(), request.barkod(), request.sube(),
+            request.aciklama(), request.ilSubeDaireBaskanlikNumarasi());
+        return toResponse(repository.save(envanter));
+    }
+
+    @Override
+    @Transactional
+    public void delete(String guid) {
+        String normalizedGuid = normalizeGuid(guid);
+        Envanter envanter = repository.findById(normalizedGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadı: " + normalizedGuid));
+        if (hareketRepository.existsByEnvanterGuid(normalizedGuid)
+            || depoHareketRepository.existsByEnvanterGuid(normalizedGuid)) {
+            throw new BusinessRuleException("Hareket geçmişi bulunan envanter silinemez");
+        }
+        repository.delete(envanter);
+    }
+
+    @Override
     public EnvanterZimmetDurumuResponse getZimmetDurumu(String envanterGuid) {
         String guid = normalizeGuid(envanterGuid);
-        Envanter envanter = repository.findById(guid)
+        Envanter envanter = repository.findDetayByGuid(guid)
             .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadı: " + guid));
 
         return hareketRepository.findFirstByEnvanterGuidOrderByIdDesc(guid)
@@ -62,8 +142,50 @@ public class EnvanterServiceImpl implements EnvanterService {
 
     private EnvanterResponse toResponse(Envanter entity) {
         String depoGuid = entity.getDepo() == null ? null : entity.getDepo().getGuid();
+        String modelGuid = entity.getModel() == null ? null : entity.getModel().getGuid();
         return new EnvanterResponse(entity.getGuid(), entity.getEnvanterAdi(),
-            entity.getEnvanterTuru(), depoGuid);
+            entity.getEnvanterTuru(), depoGuid, modelGuid, entity.getDemirbasNumarasi(),
+            entity.getSeriNo(), entity.getBarkod(), entity.getSube(), entity.getAciklama(),
+            entity.getIlSubeDaireBaskanlikNumarasi());
+    }
+
+    private void metadataGuncelle(
+        Envanter envanter, String ad, EnvanterTuru tur, String modelGuid,
+        Long demirbasNo, String seriNo, String barkod, Long sube, String aciklama, String birimNo
+    ) {
+        if (ad == null || ad.isBlank()) {
+            throw new BusinessRuleException("envanterAdi zorunludur");
+        }
+        if (tur == null) {
+            throw new BusinessRuleException("envanterTuru zorunludur");
+        }
+        envanter.setEnvanterAdi(ad.trim());
+        envanter.setEnvanterTuru(tur);
+        envanter.setModel(model(modelGuid));
+        envanter.setDemirbasNumarasi(demirbasNo);
+        envanter.setSeriNo(seriNo);
+        envanter.setBarkod(barkod);
+        envanter.setSube(sube);
+        envanter.setAciklama(aciklama);
+        envanter.setIlSubeDaireBaskanlikNumarasi(birimNo);
+    }
+
+    private Depo depo(String guid) {
+        if (guid == null || guid.isBlank()) {
+            throw new BusinessRuleException("depoGuid zorunludur");
+        }
+        String normalized = guid.trim();
+        return depoRepository.findById(normalized)
+            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadı: " + normalized));
+    }
+
+    private Model model(String guid) {
+        if (guid == null || guid.isBlank()) {
+            return null;
+        }
+        String normalized = guid.trim();
+        return modelRepository.findById(normalized)
+            .orElseThrow(() -> new ResourceNotFoundException("Model bulunamadı: " + normalized));
     }
 
     private boolean aktifPersonelZimmeti(PersonelZimmetHareket hareket) {

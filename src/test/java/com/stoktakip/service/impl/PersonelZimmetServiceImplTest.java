@@ -20,6 +20,8 @@ import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
+import com.stoktakip.repository.DepoRepository;
+import com.stoktakip.repository.DepoZimmetHareketRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,6 +36,8 @@ class PersonelZimmetServiceImplTest {
 
     @Mock PersonelZimmetHareketRepository hareketRepository;
     @Mock EnvanterRepository envanterRepository;
+    @Mock DepoRepository depoRepository;
+    @Mock DepoZimmetHareketRepository depoHareketRepository;
 
     private PersonelZimmetServiceImpl service;
 
@@ -45,7 +49,8 @@ class PersonelZimmetServiceImplTest {
             hareket.setId(ids.getAndIncrement());
             return hareket;
         });
-        service = new PersonelZimmetServiceImpl(hareketRepository, envanterRepository);
+        service = new PersonelZimmetServiceImpl(hareketRepository, envanterRepository,
+            depoRepository, depoHareketRepository);
     }
 
     @Test
@@ -123,9 +128,10 @@ class PersonelZimmetServiceImplTest {
         when(envanterRepository.findByGuidForUpdate("env-1")).thenReturn(Optional.of(envanter));
         when(hareketRepository.findFirstByEnvanterGuidOrderByIdDesc("env-1"))
             .thenReturn(Optional.of(eski));
+        when(depoRepository.findById("depo-1")).thenReturn(Optional.of(depo("depo-1")));
 
         var response = service.iadeEt(
-            "P-1", "env-1", new PersonelZimmetIadeRequest("iade", "operator"));
+            "P-1", "env-1", new PersonelZimmetIadeRequest("depo-1", "iade", "operator"));
 
         assertThat(response.hareketTipi()).isEqualTo(ZimmetHareketTipi.IADE);
         assertThat(response.aktif()).isFalse();
@@ -166,7 +172,15 @@ class PersonelZimmetServiceImplTest {
         envanter.setGuid(id);
         envanter.setEnvanterAdi("Envanter " + id);
         envanter.setEnvanterTuru(EnvanterTuru.DEMIRBAS);
+        envanter.setDepo(depo("depo-baslangic"));
         return envanter;
+    }
+
+    private static com.stoktakip.entity.Depo depo(String id) {
+        com.stoktakip.entity.Depo depo = new com.stoktakip.entity.Depo();
+        depo.setGuid(id);
+        depo.setAd(id);
+        return depo;
     }
 
     private static PersonelZimmetHareket hareket(

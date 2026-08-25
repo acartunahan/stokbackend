@@ -16,7 +16,6 @@ import jakarta.persistence.Table;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDateTime;
 
 
 @Entity
@@ -92,6 +91,20 @@ public class Envanter {
     public void setEnvanterTuru(EnvanterTuru envanterTuru) { this.envanterTuru = envanterTuru; }
     public String getEnvanterAdi() { return envanterAdi; }
     public void setEnvanterAdi(String envanterAdi) { this.envanterAdi = envanterAdi; }
+    public Long getDemirbasNumarasi() { return demirbasNumarasi; }
+    public void setDemirbasNumarasi(Long demirbasNumarasi) { this.demirbasNumarasi = demirbasNumarasi; }
+    public String getSeriNo() { return seriNo; }
+    public void setSeriNo(String seriNo) { this.seriNo = seriNo; }
+    public String getBarkod() { return barkod; }
+    public void setBarkod(String barkod) { this.barkod = barkod; }
+    public Long getSube() { return sube; }
+    public void setSube(Long sube) { this.sube = sube; }
+    public String getAciklama() { return aciklama; }
+    public void setAciklama(String aciklama) { this.aciklama = aciklama; }
+    public String getIlSubeDaireBaskanlikNumarasi() { return ilSubeDaireBaskanlikNumarasi; }
+    public void setIlSubeDaireBaskanlikNumarasi(String value) { this.ilSubeDaireBaskanlikNumarasi = value; }
+    public Model getModel() { return model; }
+    public void setModel(Model model) { this.model = model; }
     public List<Aparat> getAparatlar() { return aparatlar; }
     public void setAparatlar(List<Aparat> aparatlar) { this.aparatlar = aparatlar; }
 }

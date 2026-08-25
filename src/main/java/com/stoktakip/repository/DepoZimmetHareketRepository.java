@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface DepoZimmetHareketRepository extends JpaRepository<DepoZimmetHareket, Long> {
 
     List<DepoZimmetHareket> findByEnvanterGuidOrderByIdDesc(String guid);
+
+    boolean existsByEnvanterGuid(String guid);
 }

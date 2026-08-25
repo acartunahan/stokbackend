@@ -10,6 +10,7 @@ import com.stoktakip.entity.Envanter;
 import com.stoktakip.entity.PersonelZimmetHareket;
 import com.stoktakip.enums.ZimmetHareketTipi;
 import com.stoktakip.exception.BusinessRuleException;
+import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.DepoZimmetHareketRepository;
 import com.stoktakip.repository.EnvanterRepository;
@@ -49,6 +50,9 @@ public class ZimmetService {
         if (aktifZimmet(envanterGuid).isPresent()) {
             throw new BusinessRuleException("Envanter zaten aktif olarak bir personele zimmetli");
         }
+        if (envanter.getDepo() == null) {
+            throw new BusinessRuleException("Envanter bir depoda bulunmadığı için personele zimmetlenemez");
+        }
 
         envanter.setDepo(null);
         PersonelZimmetHareket hareket = yeniPersonelHareket(envanter, ZimmetHareketTipi.PERSONELE_ZIMMET);
@@ -66,15 +70,23 @@ public class ZimmetService {
         PersonelZimmetHareket aktif = aktifZimmet(envanterGuid)
             .orElseThrow(() -> new BusinessRuleException("Envanterin aktif personel zimmeti bulunamadi"));
 
-        if (talep.depoGuid() != null && !talep.depoGuid().isBlank()) {
-            envanter.setDepo(depo(talep.depoGuid()));
+        if (talep.depoGuid() == null || talep.depoGuid().isBlank()) {
+            throw new BusinessRuleException("depoGuid zorunludur");
         }
+        Depo hedefDepo = depo(talep.depoGuid());
+        envanter.setDepo(hedefDepo);
         PersonelZimmetHareket iade = yeniPersonelHareket(envanter, ZimmetHareketTipi.IADE);
         iade.setPersonelKodu(aktif.getPersonelKodu());
         iade.setAciklama(talep.aciklama());
         iade.setIslemYapanPersonel(talep.islemYapanPersonel());
         iade.setAktif(false);
-        return yanit(personelHareketRepository.save(iade), envanter);
+        PersonelZimmetHareket kaydedilenIade = personelHareketRepository.save(iade);
+
+        DepoZimmetHareket depoHareketi = yeniDepoHareket(
+            envanter, ZimmetHareketTipi.IADE, null, hedefDepo,
+            talep.aciklama(), talep.islemYapanPersonel(), "IADE");
+        depoHareketRepository.save(depoHareketi);
+        return yanit(kaydedilenIade, envanter);
     }
 
     @Transactional
@@ -85,25 +97,18 @@ public class ZimmetService {
         }
         Envanter envanter = envanteriKilitle(envanterGuid);
         Depo mevcutDepo = envanter.getDepo();
-        aktifZimmet(envanterGuid).ifPresent(aktif -> {
-            PersonelZimmetHareket iade = yeniPersonelHareket(envanter, ZimmetHareketTipi.IADE);
-            iade.setPersonelKodu(aktif.getPersonelKodu());
-            iade.setAciklama(talep.aciklama());
-            iade.setIslemYapanPersonel(talep.islemYapanPersonel());
-            iade.setAktif(false);
-            personelHareketRepository.save(iade);
-        });
+        if (aktifZimmet(envanterGuid).isPresent() || mevcutDepo == null) {
+            throw new BusinessRuleException("Yalnızca depoda bulunan envanter transfer edilebilir");
+        }
         Depo gidecegiDepo = depo(talep.gidecegiDepoGuid());
+        if (mevcutDepo.getGuid().equals(gidecegiDepo.getGuid())) {
+            throw new BusinessRuleException("Kaynak ve hedef depo aynı olamaz");
+        }
         envanter.setDepo(gidecegiDepo);
 
-        DepoZimmetHareket hareket = new DepoZimmetHareket();
-        hareket.setEnvanter(envanter);
-        hareket.setHareketTipi(ZimmetHareketTipi.DEPO_TRANSFERI);
-        hareket.setZimmetTuru(envanter.getEnvanterTuru().name());
-        hareket.setMevcutDepo(mevcutDepo);
-        hareket.setGidecegiDepo(gidecegiDepo);
-        hareket.setAciklama(talep.aciklama());
-        hareket.setIslemYapanPersonel(talep.islemYapanPersonel());
+        DepoZimmetHareket hareket = yeniDepoHareket(
+            envanter, ZimmetHareketTipi.DEPO_TRANSFERI, mevcutDepo, gidecegiDepo,
+            talep.aciklama(), talep.islemYapanPersonel(), "TRANSFER");
         return yanit(depoHareketRepository.save(hareket), envanter);
     }
 
@@ -137,20 +142,37 @@ public class ZimmetService {
         return hareket;
     }
 
+    private static DepoZimmetHareket yeniDepoHareket(
+        Envanter envanter, ZimmetHareketTipi tip, Depo mevcutDepo, Depo hedefDepo,
+        String aciklama, String islemYapanPersonel, String tur
+    ) {
+        DepoZimmetHareket hareket = new DepoZimmetHareket();
+        hareket.setEnvanter(envanter);
+        hareket.setHareketTipi(tip);
+        hareket.setZimmetTuru(envanter.getEnvanterTuru().name());
+        hareket.setAdet(1L);
+        hareket.setTur(tur);
+        hareket.setMevcutDepo(mevcutDepo);
+        hareket.setGidecegiDepo(hedefDepo);
+        hareket.setAciklama(aciklama);
+        hareket.setIslemYapanPersonel(islemYapanPersonel);
+        return hareket;
+    }
+
     private Envanter envanteriKilitle(String guid) {
         return envanterRepository.findByGuidForUpdate(guid)
-            .orElseThrow(() -> new BusinessRuleException("Envanter bulunamadi: " + guid));
+            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadi: " + guid));
     }
 
     private Envanter envanteriBul(String guid) {
         zorunluEnvanterGuid(guid, guid);
         return envanterRepository.findById(guid)
-            .orElseThrow(() -> new BusinessRuleException("Envanter bulunamadi: " + guid));
+            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadi: " + guid));
     }
 
     private Depo depo(String guid) {
         return depoRepository.findById(guid)
-            .orElseThrow(() -> new BusinessRuleException("Depo bulunamadi: " + guid));
+            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadi: " + guid));
     }
 
     private static String zorunluEnvanterGuid(Object talep, String guid) {

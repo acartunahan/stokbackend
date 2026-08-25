@@ -6,6 +6,13 @@ public record EnvanterResponse(
     String guid,
     String envanterAdi,
     EnvanterTuru envanterTuru,
-    String depoGuid
+    String depoGuid,
+    String modelGuid,
+    Long demirbasNumarasi,
+    String seriNo,
+    String barkod,
+    Long sube,
+    String aciklama,
+    String ilSubeDaireBaskanlikNumarasi
 ) {
 }
