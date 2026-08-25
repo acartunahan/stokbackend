@@ -13,6 +13,7 @@ public record EnvanterResponse(
     String barkod,
     Long sube,
     String aciklama,
-    String ilSubeDaireBaskanlikNumarasi
+    String ilSubeDaireBaskanlikNumarasi,
+    EnvanterDetayResponse detay
 ) {
 }

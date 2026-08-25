@@ -1,6 +1,7 @@
 package com.stoktakip.dto;
 
 import com.stoktakip.enums.EnvanterTuru;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,6 +16,7 @@ public record EnvanterCreateRequest(
     @Size(max = 100) String barkod,
     Long sube,
     @Size(max = 1000) String aciklama,
-    String ilSubeDaireBaskanlikNumarasi
+    String ilSubeDaireBaskanlikNumarasi,
+    @Valid EnvanterDetayCreateRequest detay
 ) {
 }

@@ -105,6 +105,8 @@ public class Envanter {
     public void setIlSubeDaireBaskanlikNumarasi(String value) { this.ilSubeDaireBaskanlikNumarasi = value; }
     public Model getModel() { return model; }
     public void setModel(Model model) { this.model = model; }
+    public EnvanterDetay getDetay() { return detay; }
+    public void setDetay(EnvanterDetay detay) { this.detay = detay; }
     public List<Aparat> getAparatlar() { return aparatlar; }
     public void setAparatlar(List<Aparat> aparatlar) { this.aparatlar = aparatlar; }
 }

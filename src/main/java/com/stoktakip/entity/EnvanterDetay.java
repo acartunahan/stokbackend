@@ -45,4 +45,22 @@ public class EnvanterDetay extends BaseEntity{
     @Column(name = "GARANTI_BITIS_TARIHI")
     private LocalDateTime garantiBitisTarihi;
 
+    public String getGuid() { return guid; }
+    public void setGuid(String guid) { this.guid = guid; }
+    public Envanter getEnvanter() { return envanter; }
+    public void setEnvanter(Envanter envanter) { this.envanter = envanter; }
+    public Long getAlimYolu() { return alimYolu; }
+    public void setAlimYolu(Long alimYolu) { this.alimYolu = alimYolu; }
+    public String getAlimTuru() { return alimTuru; }
+    public void setAlimTuru(String alimTuru) { this.alimTuru = alimTuru; }
+    public String getSaymanlikNo() { return saymanlikNo; }
+    public void setSaymanlikNo(String saymanlikNo) { this.saymanlikNo = saymanlikNo; }
+    public Ihale getIhale() { return ihale; }
+    public void setIhale(Ihale ihale) { this.ihale = ihale; }
+    public Firma getFirma() { return firma; }
+    public void setFirma(Firma firma) { this.firma = firma; }
+    public LocalDateTime getGarantiBaslangicTarihi() { return garantiBaslangicTarihi; }
+    public void setGarantiBaslangicTarihi(LocalDateTime value) { this.garantiBaslangicTarihi = value; }
+    public LocalDateTime getGarantiBitisTarihi() { return garantiBitisTarihi; }
+    public void setGarantiBitisTarihi(LocalDateTime value) { this.garantiBitisTarihi = value; }
 }

@@ -41,6 +41,9 @@ class CatalogServicesTest {
             envanterRepository, personelZimmetHareketRepository,
             org.mockito.Mockito.mock(com.stoktakip.repository.DepoRepository.class),
             org.mockito.Mockito.mock(com.stoktakip.repository.ModelRepository.class),
+            org.mockito.Mockito.mock(com.stoktakip.repository.EnvanterDetayRepository.class),
+            org.mockito.Mockito.mock(com.stoktakip.repository.FirmaRepository.class),
+            org.mockito.Mockito.mock(com.stoktakip.repository.IhaleRepository.class),
             org.mockito.Mockito.mock(com.stoktakip.repository.DepoZimmetHareketRepository.class)
         ).getSarflar();
 

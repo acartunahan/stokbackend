@@ -16,6 +16,9 @@ import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.DepoZimmetHareketRepository;
 import com.stoktakip.repository.ModelRepository;
+import com.stoktakip.repository.EnvanterDetayRepository;
+import com.stoktakip.repository.FirmaRepository;
+import com.stoktakip.repository.IhaleRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +34,9 @@ class EnvanterZimmetDurumuServiceTest {
     @Mock PersonelZimmetHareketRepository hareketRepository;
     @Mock DepoRepository depoRepository;
     @Mock ModelRepository modelRepository;
+    @Mock EnvanterDetayRepository detayRepository;
+    @Mock FirmaRepository firmaRepository;
+    @Mock IhaleRepository ihaleRepository;
     @Mock DepoZimmetHareketRepository depoHareketRepository;
 
     private EnvanterServiceImpl service;
@@ -38,7 +44,8 @@ class EnvanterZimmetDurumuServiceTest {
     @BeforeEach
     void setUp() {
         service = new EnvanterServiceImpl(envanterRepository, hareketRepository,
-            depoRepository, modelRepository, depoHareketRepository);
+            depoRepository, modelRepository, detayRepository, firmaRepository,
+            ihaleRepository, depoHareketRepository);
     }
 
     @Test

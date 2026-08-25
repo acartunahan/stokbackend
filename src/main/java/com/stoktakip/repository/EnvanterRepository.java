@@ -13,14 +13,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface EnvanterRepository extends JpaRepository<Envanter, String> {
 
-    @EntityGraph(attributePaths = {"depo", "model"})
+    @EntityGraph(attributePaths = {"depo", "model", "detay", "detay.ihale", "detay.firma"})
     List<Envanter> findByEnvanterTuru(EnvanterTuru envanterTuru);
 
     @Override
-    @EntityGraph(attributePaths = {"depo", "model"})
+    @EntityGraph(attributePaths = {"depo", "model", "detay", "detay.ihale", "detay.firma"})
     List<Envanter> findAll();
 
-    @EntityGraph(attributePaths = {"depo", "model"})
+    @EntityGraph(attributePaths = {"depo", "model", "detay", "detay.ihale", "detay.firma"})
     @Query("select e from Envanter e where e.guid = :guid")
     Optional<Envanter> findDetayByGuid(@Param("guid") String guid);
 
