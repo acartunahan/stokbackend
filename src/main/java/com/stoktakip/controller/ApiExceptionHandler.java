@@ -3,6 +3,7 @@ package com.stoktakip.controller;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,5 +33,11 @@ public class ApiExceptionHandler {
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .orElse("Geçersiz istek");
         return Map.of("message", message);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> dataIntegrity() {
+        return Map.of("message", "İşlem veri bütünlüğü kuralları nedeniyle tamamlanamadı");
     }
 }

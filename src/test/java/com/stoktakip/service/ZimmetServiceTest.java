@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.stoktakip.dto.DepoTransferTalebi;
@@ -132,6 +133,19 @@ class ZimmetServiceTest {
         assertThat(yanit.mevcutDepoGuid()).isEqualTo("depo-a");
         assertThat(yanit.gidecegiDepoGuid()).isEqualTo("depo-b");
         assertThat(envanter.getDepo()).isSameAs(yeniDepo);
+    }
+
+    @Test
+    void gecmisSorgusundaEnvanterGuidNormalizeEdilir() {
+        Envanter envanter = envanter("envanter-1", EnvanterTuru.DEMIRBAS);
+        when(envanterRepository.findById("envanter-1")).thenReturn(Optional.of(envanter));
+        when(personelRepository.findByEnvanterGuidOrderByIdDesc("envanter-1"))
+            .thenReturn(java.util.List.of());
+
+        assertThat(service.personelGecmisi("  envanter-1  ")).isEmpty();
+
+        verify(envanterRepository).findById("envanter-1");
+        verify(personelRepository).findByEnvanterGuidOrderByIdDesc("envanter-1");
     }
 
     private static ZimmetTalebi talep(String guid, String personel) {

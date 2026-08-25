@@ -10,7 +10,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "KATEGORI")
@@ -35,5 +34,41 @@ public class Kategori extends BaseEntity{
 
     public String getGuid() {
         return guid;
+    }
+
+    public void setGuid(String guid) {
+        this.guid = guid;
+    }
+
+    public Kategori getParent() {
+        return parent;
+    }
+
+    public void setParent(Kategori parent) {
+        this.parent = parent;
+    }
+
+    public String getBaslik() {
+        return baslik;
+    }
+
+    public void setBaslik(String baslik) {
+        this.baslik = baslik;
+    }
+
+    public List<Model> getModeller() {
+        return modeller;
+    }
+
+    public void setModeller(List<Model> modeller) {
+        this.modeller = modeller;
+    }
+
+    public List<Kategori> getAltKategoriler() {
+        return altKategoriler;
+    }
+
+    public void setAltKategoriler(List<Kategori> altKategoriler) {
+        this.altKategoriler = altKategoriler;
     }
 }

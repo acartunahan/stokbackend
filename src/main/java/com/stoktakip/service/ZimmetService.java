@@ -115,7 +115,7 @@ public class ZimmetService {
     @Transactional(readOnly = true)
     public List<ZimmetHareketYaniti> personelGecmisi(String guid) {
         Envanter envanter = envanteriBul(guid);
-        return personelHareketRepository.findByEnvanterGuidOrderByIdDesc(guid).stream()
+        return personelHareketRepository.findByEnvanterGuidOrderByIdDesc(envanter.getGuid()).stream()
             .map(hareket -> yanit(hareket, envanter))
             .toList();
     }
@@ -123,7 +123,7 @@ public class ZimmetService {
     @Transactional(readOnly = true)
     public List<ZimmetHareketYaniti> depoGecmisi(String guid) {
         Envanter envanter = envanteriBul(guid);
-        return depoHareketRepository.findByEnvanterGuidOrderByIdDesc(guid).stream()
+        return depoHareketRepository.findByEnvanterGuidOrderByIdDesc(envanter.getGuid()).stream()
             .map(hareket -> yanit(hareket, envanter))
             .toList();
     }
@@ -165,14 +165,15 @@ public class ZimmetService {
     }
 
     private Envanter envanteriBul(String guid) {
-        zorunluEnvanterGuid(guid, guid);
-        return envanterRepository.findById(guid)
-            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadi: " + guid));
+        String normalizedGuid = zorunluEnvanterGuid(guid, guid);
+        return envanterRepository.findById(normalizedGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadi: " + normalizedGuid));
     }
 
     private Depo depo(String guid) {
-        return depoRepository.findById(guid)
-            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadi: " + guid));
+        String normalizedGuid = guid.trim();
+        return depoRepository.findById(normalizedGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadi: " + normalizedGuid));
     }
 
     private static String zorunluEnvanterGuid(Object talep, String guid) {
