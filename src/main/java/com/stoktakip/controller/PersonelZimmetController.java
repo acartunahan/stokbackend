@@ -4,6 +4,9 @@ import com.stoktakip.dto.PersonelEnvanterResponse;
 import com.stoktakip.dto.PersonelZimmetCreateRequest;
 import com.stoktakip.dto.PersonelZimmetGecmisiResponse;
 import com.stoktakip.dto.PersonelZimmetIadeRequest;
+import com.stoktakip.dto.TopluIslemResponse;
+import com.stoktakip.dto.TopluPersonelIadeRequest;
+import com.stoktakip.dto.TopluPersonelZimmetRequest;
 import com.stoktakip.service.PersonelZimmetService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -51,6 +54,24 @@ public class PersonelZimmetController {
         @Valid @RequestBody PersonelZimmetCreateRequest request
     ) {
         return personelZimmetService.zimmetOlustur(personelKodu, request);
+    }
+
+    @PostMapping("/zimmetler/toplu")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TopluIslemResponse<PersonelZimmetGecmisiResponse> topluZimmetOlustur(
+        @PathVariable String personelKodu,
+        @Valid @RequestBody TopluPersonelZimmetRequest request
+    ) {
+        return personelZimmetService.topluZimmetOlustur(personelKodu, request);
+    }
+
+    @PostMapping("/iadeler/toplu")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TopluIslemResponse<PersonelZimmetGecmisiResponse> topluIadeEt(
+        @PathVariable String personelKodu,
+        @Valid @RequestBody TopluPersonelIadeRequest request
+    ) {
+        return personelZimmetService.topluIadeEt(personelKodu, request);
     }
 
     @PostMapping("/zimmetler/{envanterId}/iade")

@@ -4,6 +4,8 @@ import com.stoktakip.dto.DepoTransferTalebi;
 import com.stoktakip.dto.IadeTalebi;
 import com.stoktakip.dto.ZimmetHareketYaniti;
 import com.stoktakip.dto.ZimmetTalebi;
+import com.stoktakip.dto.TopluDepoTransferRequest;
+import com.stoktakip.dto.TopluIslemResponse;
 import com.stoktakip.service.ZimmetService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -42,6 +44,14 @@ public class ZimmetController {
     @ResponseStatus(HttpStatus.CREATED)
     public ZimmetHareketYaniti depoyaTasi(@Valid @RequestBody DepoTransferTalebi talep) {
         return zimmetService.depoyaTasi(talep);
+    }
+
+    @PostMapping("/toplu-depo-transferi")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TopluIslemResponse<ZimmetHareketYaniti> topluDepoyaTasi(
+        @Valid @RequestBody TopluDepoTransferRequest talep
+    ) {
+        return zimmetService.topluDepoyaTasi(talep);
     }
 
     @GetMapping("/envanter/{guid}/personel-hareketleri")

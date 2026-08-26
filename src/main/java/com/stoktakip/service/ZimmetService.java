@@ -4,6 +4,8 @@ import com.stoktakip.dto.DepoTransferTalebi;
 import com.stoktakip.dto.IadeTalebi;
 import com.stoktakip.dto.ZimmetHareketYaniti;
 import com.stoktakip.dto.ZimmetTalebi;
+import com.stoktakip.dto.TopluDepoTransferRequest;
+import com.stoktakip.dto.TopluIslemResponse;
 import com.stoktakip.entity.Depo;
 import com.stoktakip.entity.DepoZimmetHareket;
 import com.stoktakip.entity.Envanter;
@@ -95,12 +97,48 @@ public class ZimmetService {
         if (talep.gidecegiDepoGuid() == null || talep.gidecegiDepoGuid().isBlank()) {
             throw new BusinessRuleException("gidecegiDepoGuid zorunludur");
         }
+        Depo gidecegiDepo = depo(talep.gidecegiDepoGuid());
+        return depoyaTasi(talep, envanterGuid, null, gidecegiDepo);
+    }
+
+    @Transactional
+    public TopluIslemResponse<ZimmetHareketYaniti> topluDepoyaTasi(
+        TopluDepoTransferRequest talep
+    ) {
+        if (talep == null) {
+            throw new BusinessRuleException("Toplu depo transfer talebi zorunludur");
+        }
+        Depo kaynakDepo = depo(talep.kaynakDepoGuid());
+        Depo hedefDepo = depo(talep.hedefDepoGuid());
+        if (kaynakDepo.getGuid().equals(hedefDepo.getGuid())) {
+            throw new BusinessRuleException("Kaynak ve hedef depo aynı olamaz");
+        }
+        var items = TopluIslemValidator.validateAndSort(talep.envanterler());
+        List<ZimmetHareketYaniti> results = items.stream()
+            .map(item -> depoyaTasi(
+                new DepoTransferTalebi(item.envanterGuid(), hedefDepo.getGuid(),
+                    talep.aciklama(), talep.islemYapanPersonel()),
+                item.envanterGuid(), kaynakDepo, hedefDepo))
+            .toList();
+        return new TopluIslemResponse<>("TOPLU_DEPO_TRANSFERI", results.size(), results);
+    }
+
+    private ZimmetHareketYaniti depoyaTasi(
+        DepoTransferTalebi talep,
+        String envanterGuid,
+        Depo beklenenKaynakDepo,
+        Depo gidecegiDepo
+    ) {
         Envanter envanter = envanteriKilitle(envanterGuid);
         Depo mevcutDepo = envanter.getDepo();
         if (aktifZimmet(envanterGuid).isPresent() || mevcutDepo == null) {
             throw new BusinessRuleException("Yalnızca depoda bulunan envanter transfer edilebilir");
         }
-        Depo gidecegiDepo = depo(talep.gidecegiDepoGuid());
+        if (beklenenKaynakDepo != null
+            && !beklenenKaynakDepo.getGuid().equals(mevcutDepo.getGuid())) {
+            throw new BusinessRuleException(
+                "Envanter kaynak depoda bulunmuyor: " + envanterGuid);
+        }
         if (mevcutDepo.getGuid().equals(gidecegiDepo.getGuid())) {
             throw new BusinessRuleException("Kaynak ve hedef depo aynı olamaz");
         }

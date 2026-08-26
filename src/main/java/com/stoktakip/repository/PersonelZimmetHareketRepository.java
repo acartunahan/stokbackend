@@ -5,11 +5,31 @@ import com.stoktakip.dto.PersonelZimmetGecmisiResponse;
 import com.stoktakip.entity.PersonelZimmetHareket;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PersonelZimmetHareketRepository extends SoftDeleteRepository<PersonelZimmetHareket, Long> {
+
+    @EntityGraph(attributePaths = {"envanter"})
+    @Query("""
+        select h from PersonelZimmetHareket h
+        where h.envanter.guid = :guid
+          and h.silindi = false
+          and h.envanter.silindi = false
+          and (:baslangicTarihi is null or h.olusturmaTarihi >= :baslangicTarihi)
+          and (:bitisTarihi is null or h.olusturmaTarihi <= :bitisTarihi)
+        """)
+    Page<PersonelZimmetHareket> findTimelineByEnvanterGuid(
+        @Param("guid") String guid,
+        @Param("baslangicTarihi") LocalDateTime baslangicTarihi,
+        @Param("bitisTarihi") LocalDateTime bitisTarihi,
+        Pageable pageable
+    );
 
     @Query("select h from PersonelZimmetHareket h where h.envanter.guid = :guid and h.silindi = false order by h.id desc")
     List<PersonelZimmetHareket> findByEnvanterGuidOrderByIdDesc(String guid);

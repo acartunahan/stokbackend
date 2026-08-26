@@ -4,6 +4,9 @@ import com.stoktakip.dto.PersonelEnvanterResponse;
 import com.stoktakip.dto.PersonelZimmetCreateRequest;
 import com.stoktakip.dto.PersonelZimmetGecmisiResponse;
 import com.stoktakip.dto.PersonelZimmetIadeRequest;
+import com.stoktakip.dto.TopluIslemResponse;
+import com.stoktakip.dto.TopluPersonelIadeRequest;
+import com.stoktakip.dto.TopluPersonelZimmetRequest;
 import com.stoktakip.entity.Envanter;
 import com.stoktakip.entity.Depo;
 import com.stoktakip.entity.DepoZimmetHareket;
@@ -16,6 +19,7 @@ import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.DepoZimmetHareketRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.PersonelZimmetService;
+import com.stoktakip.service.TopluIslemValidator;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -141,6 +145,46 @@ public class PersonelZimmetServiceImpl implements PersonelZimmetService {
         depoHareketi.setIslemYapanPersonel(request.islemYapanPersonel());
         depoHareketRepository.save(depoHareketi);
         return response(kaydedilen);
+    }
+
+    @Override
+    @Transactional
+    public TopluIslemResponse<PersonelZimmetGecmisiResponse> topluZimmetOlustur(
+        String personelKodu, TopluPersonelZimmetRequest request
+    ) {
+        String kod = personelKodu(personelKodu);
+        if (request == null) {
+            throw new BusinessRuleException("Toplu zimmet talebi zorunludur");
+        }
+        var items = TopluIslemValidator.validateAndSort(request.envanterler());
+        List<PersonelZimmetGecmisiResponse> results = items.stream()
+            .map(item -> zimmetOlustur(kod, new PersonelZimmetCreateRequest(
+                item.envanterGuid(), request.aciklama(), request.islemYapanPersonel())))
+            .toList();
+        return new TopluIslemResponse<>("TOPLU_PERSONEL_ZIMMETI", results.size(), results);
+    }
+
+    @Override
+    @Transactional
+    public TopluIslemResponse<PersonelZimmetGecmisiResponse> topluIadeEt(
+        String personelKodu, TopluPersonelIadeRequest request
+    ) {
+        String kod = personelKodu(personelKodu);
+        if (request == null) {
+            throw new BusinessRuleException("Toplu iade talebi zorunludur");
+        }
+        if (request.hedefDepoGuid() == null || request.hedefDepoGuid().isBlank()) {
+            throw new BusinessRuleException("hedefDepoGuid zorunludur");
+        }
+        String hedefDepoGuid = request.hedefDepoGuid().trim();
+        depoRepository.findById(hedefDepoGuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadi: " + hedefDepoGuid));
+        var items = TopluIslemValidator.validateAndSort(request.envanterler());
+        List<PersonelZimmetGecmisiResponse> results = items.stream()
+            .map(item -> iadeEt(kod, item.envanterGuid(), new PersonelZimmetIadeRequest(
+                hedefDepoGuid, request.aciklama(), request.islemYapanPersonel())))
+            .toList();
+        return new TopluIslemResponse<>("TOPLU_PERSONEL_IADESI", results.size(), results);
     }
 
     private Optional<PersonelZimmetHareket> sonHareket(String envanterId) {

@@ -6,6 +6,8 @@ import com.stoktakip.dto.EnvanterDetayCreateRequest;
 import com.stoktakip.dto.EnvanterDetayResponse;
 import com.stoktakip.dto.EnvanterUpdateRequest;
 import com.stoktakip.dto.EnvanterZimmetDurumuResponse;
+import com.stoktakip.dto.EnvanterFilter;
+import com.stoktakip.dto.PageResponse;
 import com.stoktakip.entity.Depo;
 import com.stoktakip.entity.DepoZimmetHareket;
 import com.stoktakip.entity.Envanter;
@@ -27,14 +29,22 @@ import com.stoktakip.repository.FirmaRepository;
 import com.stoktakip.repository.IhaleRepository;
 import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.EnvanterService;
+import com.stoktakip.service.PageableFactory;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
 public class EnvanterServiceImpl implements EnvanterService {
+    private static final Set<String> SORT_FIELDS = Set.of(
+        "guid", "envanterAdi", "envanterTuru", "demirbasNumarasi", "seriNo", "barkod", "sube"
+    );
     private final EnvanterRepository repository;
     private final PersonelZimmetHareketRepository hareketRepository;
     private final DepoRepository depoRepository;
@@ -67,6 +77,56 @@ public class EnvanterServiceImpl implements EnvanterService {
     @Override
     public List<EnvanterResponse> getAll() {
         return repository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    public PageResponse<EnvanterResponse> search(EnvanterFilter filter, Pageable pageable) {
+        Pageable safePageable = PageableFactory.sanitize(
+            pageable, Sort.by("envanterAdi").ascending(), SORT_FIELDS);
+        Page<EnvanterResponse> result = repository.findAll(
+            com.stoktakip.repository.EnvanterSpecifications.filtered(filter), safePageable
+        ).map(this::toResponse);
+        return PageResponse.from(result);
+    }
+
+    @Override
+    public PageResponse<EnvanterResponse> getByDepo(
+        String depoGuid, EnvanterFilter filter, Pageable pageable
+    ) {
+        String guid = normalizeGuid(depoGuid);
+        depoRepository.findById(guid)
+            .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadı: " + guid));
+        EnvanterFilter source = filter == null
+            ? new EnvanterFilter(null, null, null, guid, null, null, null, null, null, null)
+            : filter;
+        EnvanterFilter depotFilter = new EnvanterFilter(
+            source.kategoriGuid(), source.markaGuid(), source.modelGuid(), guid,
+            source.firmaGuid(), source.envanterTuru(), source.seriNo(),
+            source.demirbasNumarasi(), source.barkod(), source.q());
+        return search(depotFilter, pageable);
+    }
+
+    @Override
+    public EnvanterResponse lookup(String seriNo, Long demirbasNumarasi, String barkod) {
+        int criteriaCount = (hasText(seriNo) ? 1 : 0)
+            + (demirbasNumarasi == null ? 0 : 1)
+            + (hasText(barkod) ? 1 : 0);
+        if (criteriaCount != 1) {
+            throw new BusinessRuleException(
+                "seriNo, demirbasNumarasi veya barkod alanlarından tam olarak biri gönderilmelidir");
+        }
+        EnvanterFilter filter = new EnvanterFilter(
+            null, null, null, null, null, null, seriNo, demirbasNumarasi, barkod, null);
+        Page<Envanter> matches = repository.findAll(
+            com.stoktakip.repository.EnvanterSpecifications.filtered(filter),
+            org.springframework.data.domain.PageRequest.of(0, 2));
+        if (matches.getTotalElements() == 0) {
+            throw new ResourceNotFoundException("Envanter bulunamadı");
+        }
+        if (matches.getTotalElements() > 1) {
+            throw new BusinessRuleException("Arama kriteri birden fazla aktif envanterle eşleşti");
+        }
+        return toResponse(matches.getContent().getFirst());
     }
 
     @Override
@@ -300,6 +360,10 @@ public class EnvanterServiceImpl implements EnvanterService {
 
     private static String normalizeOptionalGuid(String guid) {
         return guid == null || guid.isBlank() ? null : guid.trim();
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private record DetayReferanslari(Ihale ihale, Firma firma) {

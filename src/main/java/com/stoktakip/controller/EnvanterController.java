@@ -4,8 +4,18 @@ import com.stoktakip.dto.EnvanterResponse;
 import com.stoktakip.dto.EnvanterCreateRequest;
 import com.stoktakip.dto.EnvanterUpdateRequest;
 import com.stoktakip.dto.EnvanterZimmetDurumuResponse;
+import com.stoktakip.dto.EnvanterFilter;
+import com.stoktakip.dto.EnvanterHareketResponse;
+import com.stoktakip.dto.PageResponse;
+import com.stoktakip.enums.EnvanterTuru;
 import com.stoktakip.service.EnvanterService;
+import com.stoktakip.service.HareketService;
+import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,14 +32,51 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping({"/api/envanter", "/api/envanterler"})
 public class EnvanterController {
     private final EnvanterService service;
+    private final HareketService hareketService;
 
-    public EnvanterController(EnvanterService service) {
+    public EnvanterController(EnvanterService service, HareketService hareketService) {
         this.service = service;
+        this.hareketService = hareketService;
     }
 
     @GetMapping
-    public List<EnvanterResponse> getAll() {
-        return service.getAll();
+    public PageResponse<EnvanterResponse> getAll(
+        @RequestParam(required = false) String kategoriGuid,
+        @RequestParam(required = false) String markaGuid,
+        @RequestParam(required = false) String modelGuid,
+        @RequestParam(required = false) String depoGuid,
+        @RequestParam(required = false) String firmaGuid,
+        @RequestParam(required = false) EnvanterTuru envanterTuru,
+        @RequestParam(required = false) String seriNo,
+        @RequestParam(required = false) Long demirbasNumarasi,
+        @RequestParam(required = false) String barkod,
+        @RequestParam(required = false) String q,
+        @PageableDefault(size = 20) Pageable pageable
+    ) {
+        return service.search(new EnvanterFilter(kategoriGuid, markaGuid, modelGuid, depoGuid,
+            firmaGuid, envanterTuru, seriNo, demirbasNumarasi, barkod, q), pageable);
+    }
+
+    @GetMapping("/lookup")
+    public EnvanterResponse lookup(
+        @RequestParam(required = false) String seriNo,
+        @RequestParam(required = false) Long demirbasNumarasi,
+        @RequestParam(required = false) String barkod
+    ) {
+        return service.lookup(seriNo, demirbasNumarasi, barkod);
+    }
+
+    @GetMapping("/{guid}/hareketler")
+    public PageResponse<EnvanterHareketResponse> getHareketler(
+        @PathVariable String guid,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime baslangicTarihi,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bitisTarihi,
+        @PageableDefault(size = 20) Pageable pageable
+    ) {
+        return hareketService.getEnvanterHareketleri(
+            guid, baslangicTarihi, bitisTarihi, pageable);
     }
 
     @GetMapping("/sarf")

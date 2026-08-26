@@ -273,7 +273,7 @@ COMMIT;
     Invoke-Api EnvanterController GET "/api/envanterler/$($ids.EnvanterDelete)" 'Read after soft delete plural' @(404) | Out-Null
     foreach ($base in @('/api/envanter','/api/envanterler')) {
         $afterDeleteList = Invoke-Api EnvanterController GET $base "List after soft delete $base" @(200) $null 'YES'
-        Assert-Value EnvanterController GET $base 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $ids.EnvanterDelete).Count -eq 0) $afterDeleteList.Raw | Out-Null
+        Assert-Value EnvanterController GET $base 'Deleted record excluded from list' (@($afterDeleteList.Json.content | Where-Object guid -eq $ids.EnvanterDelete).Count -eq 0) $afterDeleteList.Raw | Out-Null
     }
     Invoke-Api EnvanterController DELETE "/api/envanterler/$($ids.EnvanterDelete)" 'Second delete' @(404) | Out-Null
 
