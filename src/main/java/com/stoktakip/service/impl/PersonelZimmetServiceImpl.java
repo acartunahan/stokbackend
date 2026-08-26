@@ -79,15 +79,15 @@ public class PersonelZimmetServiceImpl implements PersonelZimmetService {
         }
         String envanterId = envanterId(request.envanterId());
         Envanter envanter = envanteriKilitle(envanterId);
-        if (envanter.getDepo() == null) {
-            throw new BusinessRuleException("Envanter bir depoda bulunmadığı için personele zimmetlenemez");
-        }
         sonHareket(envanterId).ifPresent(son -> {
             if (son.getHareketTipi() == ZimmetHareketTipi.PERSONELE_ZIMMET
                 && Boolean.TRUE.equals(son.getAktif())) {
                 throw new BusinessRuleException("Envanter zaten aktif olarak bir personele zimmetli");
             }
         });
+        if (envanter.getDepo() == null) {
+            throw new BusinessRuleException("Envanter bir depoda bulunmadığı için personele zimmetlenemez");
+        }
 
         PersonelZimmetHareket hareket = yeniHareket(
             envanter, kod, ZimmetHareketTipi.PERSONELE_ZIMMET,
@@ -173,9 +173,14 @@ public class PersonelZimmetServiceImpl implements PersonelZimmetService {
 
     private static PersonelZimmetGecmisiResponse response(PersonelZimmetHareket hareket) {
         Envanter envanter = hareket.getEnvanter();
+        var model = envanter.getModel();
+        String modelAdi = model == null ? null : model.getModelAdi();
+        String markaAdi = model == null || model.getMarka() == null
+            ? null
+            : model.getMarka().getMarkaAdi();
         return new PersonelZimmetGecmisiResponse(
             hareket.getId(), hareket.getPersonelKodu(), envanter.getGuid(),
-            envanter.getEnvanterAdi(), envanter.getEnvanterTuru(), null, null,
+            envanter.getEnvanterAdi(), envanter.getEnvanterTuru(), markaAdi, modelAdi,
             null, null,
             hareket.getHareketTipi(), hareket.getZimmetTuru(), hareket.getAciklama(),
             hareket.getIslemYapanPersonel(), hareket.getOlusturmaTarihi(),

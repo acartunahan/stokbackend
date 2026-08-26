@@ -11,6 +11,7 @@ public record ZimmetHareketYaniti(
     String personelKodu,
     String mevcutDepoGuid,
     String gidecegiDepoGuid,
+    Long adet,
     String aciklama,
     LocalDateTime tarih,
     boolean aktif

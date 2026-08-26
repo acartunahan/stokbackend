@@ -185,14 +185,14 @@ public class ZimmetService {
 
     private static ZimmetHareketYaniti yanit(PersonelZimmetHareket hareket, Envanter envanter) {
         return new ZimmetHareketYaniti(hareket.getId(), envanter.getGuid(), envanter.getEnvanterTuru().name(),
-            hareket.getHareketTipi(), hareket.getPersonelKodu(), null, null, hareket.getAciklama(),
+            hareket.getHareketTipi(), hareket.getPersonelKodu(), null, null, null, hareket.getAciklama(),
             hareket.getOlusturmaTarihi(), Boolean.TRUE.equals(hareket.getAktif()));
     }
 
     private static ZimmetHareketYaniti yanit(DepoZimmetHareket hareket, Envanter envanter) {
         return new ZimmetHareketYaniti(hareket.getId(), envanter.getGuid(), envanter.getEnvanterTuru().name(),
             hareket.getHareketTipi(), null, guid(hareket.getMevcutDepo()), guid(hareket.getGidecegiDepo()),
-            hareket.getAciklama(), hareket.getOlusturmaTarihi(), Boolean.TRUE.equals(hareket.getAktif()));
+            hareket.getAdet(), hareket.getAciklama(), hareket.getOlusturmaTarihi(), Boolean.TRUE.equals(hareket.getAktif()));
     }
 
     private static String guid(Depo depo) {
