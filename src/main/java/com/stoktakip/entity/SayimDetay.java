@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "SAYIM_DETAY")
-public class SayimDetay {
+public class SayimDetay extends SoftDeleteEntity {
 
     @Column(name = "ID")
     private Long id;

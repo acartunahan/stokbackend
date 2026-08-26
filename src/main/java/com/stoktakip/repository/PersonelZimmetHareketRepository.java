@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PersonelZimmetHareketRepository extends JpaRepository<PersonelZimmetHareket, Long> {
+public interface PersonelZimmetHareketRepository extends SoftDeleteRepository<PersonelZimmetHareket, Long> {
 
+    @Query("select h from PersonelZimmetHareket h where h.envanter.guid = :guid and h.silindi = false order by h.id desc")
     List<PersonelZimmetHareket> findByEnvanterGuidOrderByIdDesc(String guid);
 
+    @Query("select h from PersonelZimmetHareket h where h.envanter.guid = :guid and h.silindi = false order by h.id desc limit 1")
     Optional<PersonelZimmetHareket> findFirstByEnvanterGuidOrderByIdDesc(String guid);
 
+    @Query("select count(h) > 0 from PersonelZimmetHareket h where h.envanter.guid = :guid and h.silindi = false")
     boolean existsByEnvanterGuid(String guid);
 
     @Query("""
@@ -27,12 +30,14 @@ public interface PersonelZimmetHareketRepository extends JpaRepository<PersonelZ
         left join e.model model
         left join model.marka marka
         where hareket.personelKodu = :personelKodu
+          and hareket.silindi = false
           and hareket.hareketTipi = com.stoktakip.enums.ZimmetHareketTipi.PERSONELE_ZIMMET
           and hareket.aktif = true
           and hareket.id = (
               select max(sonHareket.id)
               from PersonelZimmetHareket sonHareket
               where sonHareket.envanter = e
+                and sonHareket.silindi = false
           )
         order by hareket.olusturmaTarihi desc, hareket.id desc
         """)
@@ -61,6 +66,7 @@ public interface PersonelZimmetHareketRepository extends JpaRepository<PersonelZ
         left join aparatEnvanter.model aparatModel
         left join aparatModel.marka aparatMarka
         where hareket.personelKodu = :personelKodu
+          and hareket.silindi = false
         order by hareket.olusturmaTarihi desc, hareket.id desc
         """)
     List<PersonelZimmetGecmisiResponse> findGecmisByPersonelKodu(
@@ -87,7 +93,9 @@ public interface PersonelZimmetHareketRepository extends JpaRepository<PersonelZ
         left join model.marka marka
         left join aparatEnvanter.model aparatModel
         left join aparatModel.marka aparatMarka
-        where hareket.personelKodu = :personelKodu and hareket.id = :hareketId
+        where hareket.personelKodu = :personelKodu
+          and hareket.id = :hareketId
+          and hareket.silindi = false
         """)
     Optional<PersonelZimmetGecmisiResponse> findGecmisByPersonelKoduAndId(
         @Param("personelKodu") String personelKodu,

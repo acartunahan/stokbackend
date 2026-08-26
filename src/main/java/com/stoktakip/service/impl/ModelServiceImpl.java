@@ -51,7 +51,7 @@ public class ModelServiceImpl implements ModelService {
         String guid = markaGuid(markaGuid);
         String aramaMetni = normalizeSearchTerm(adi);
         findMarka(guid);
-        return repository.findByMarka_GuidAndModelAdiContainingIgnoreCase(guid, aramaMetni).stream()
+        return repository.findByMarka_GuidAndModelAdiContainingIgnoreCaseAndSilindiFalse(guid, aramaMetni).stream()
             .map(this::toResponse)
             .toList();
     }

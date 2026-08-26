@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "SQL_KAYDI")
-public class SqlKaydi {
+public class SqlKaydi extends SoftDeleteEntity {
 
     @Column(name = "ID")
     private Long id;

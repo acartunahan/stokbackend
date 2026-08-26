@@ -88,7 +88,7 @@ function Contains-Guid($Json, [string]$Guid) {
 
 function Cleanup-TestData {
     if (-not $ids.Envanter1 -and -not $ids.Envanter2) { return }
-    $envIds = @($ids.Envanter1, $ids.Envanter2) | Where-Object { $_ }
+    $envIds = @($ids.Envanter1, $ids.Envanter2, $ids.EnvanterDelete) | Where-Object { $_ }
     foreach ($envId in $envIds) {
         Invoke-Sql @"
 DELETE FROM PERSONEL_ZIMMET_HAREKET WHERE ENVANTER_GUID = '$envId';
@@ -99,18 +99,15 @@ DELETE FROM ENVANTER WHERE GUID = '$envId';
 COMMIT;
 "@ | Out-Null
     }
-    foreach ($pair in @(
-        @('IHALE', $ids.Ihale), @('MODEL', $ids.Model), @('MARKA', $ids.Marka),
-        @('KATEGORI', $ids.Kategori), @('FIRMA', $ids.Firma),
-        @('DEPO', $ids.DepoA), @('DEPO', $ids.DepoB)
-    )) {
-        if ($pair[1]) {
-            Invoke-Sql @"
-DELETE FROM $($pair[0]) WHERE GUID = '$($pair[1])';
+    Invoke-Sql @"
+DELETE FROM IHALE WHERE AD LIKE '$prefix%';
+DELETE FROM MODEL WHERE MODEL_ADI LIKE '$prefix%';
+DELETE FROM MARKA WHERE MARKA_ADI LIKE '$prefix%';
+DELETE FROM KATEGORI WHERE BASLIK LIKE '$prefix%';
+DELETE FROM FIRMA WHERE AD LIKE '$prefix%';
+DELETE FROM DEPO WHERE AD LIKE '$prefix%';
 COMMIT;
 "@ | Out-Null
-        }
-    }
 }
 
 try {
@@ -131,8 +128,11 @@ try {
     Invoke-Api KategoriController POST '/api/kategoriler' 'Foreign parent not found' @(404) @{baslik="$prefix`_BAD";parentId='CODEX_MISSING'} | Out-Null
     $candidate = Invoke-Api KategoriController POST '/api/kategoriler' 'Delete candidate create' @(201) @{baslik="$prefix`_KATEGORI_DELETE"}
     Invoke-Api KategoriController DELETE "/api/kategoriler/$($candidate.Json.guid)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db KategoriController DELETE '/api/kategoriler/{guid}' 'Delete DB' "SELECT COUNT(*) FROM KATEGORI WHERE GUID='$($candidate.Json.guid)';" '0' | Out-Null
+    Assert-Db KategoriController DELETE '/api/kategoriler/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM KATEGORI WHERE GUID='$($candidate.Json.guid)' AND SILINDI=TRUE;" '1' | Out-Null
     Invoke-Api KategoriController GET "/api/kategoriler/$($candidate.Json.guid)" 'Read after delete' @(404) | Out-Null
+    $afterDeleteList = Invoke-Api KategoriController GET '/api/kategoriler' 'List after delete' @(200) $null 'YES'
+    Assert-Value KategoriController GET '/api/kategoriler' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $candidate.Json.guid).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api KategoriController DELETE "/api/kategoriler/$($candidate.Json.guid)" 'Second delete' @(404) | Out-Null
 
     # MarkaController.
     $r = Invoke-Api MarkaController POST '/api/markalar' Create @(201) @{markaAdi="$prefix`_MARKA";aciklama='Codex E2E'} 'PENDING'
@@ -146,7 +146,12 @@ try {
     Invoke-Api MarkaController PUT '/api/markalar/CODEX_MISSING' 'Update not found' @(404) @{markaAdi='X'} | Out-Null
     $candidate = Invoke-Api MarkaController POST '/api/markalar' 'Delete candidate create' @(201) @{markaAdi="$prefix`_MARKA_DELETE"}
     Invoke-Api MarkaController DELETE "/api/markalar/$($candidate.Json.guid)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db MarkaController DELETE '/api/markalar/{guid}' 'Delete DB' "SELECT COUNT(*) FROM MARKA WHERE GUID='$($candidate.Json.guid)';" '0' | Out-Null
+    Assert-Db MarkaController DELETE '/api/markalar/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM MARKA WHERE GUID='$($candidate.Json.guid)' AND SILINDI=TRUE;" '1' | Out-Null
+    $afterDeleteList = Invoke-Api MarkaController GET '/api/markalar' 'List after delete' @(200) $null 'YES'
+    Assert-Value MarkaController GET '/api/markalar' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $candidate.Json.guid).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api MarkaController DELETE "/api/markalar/$($candidate.Json.guid)" 'Second delete' @(404) | Out-Null
+    $recreated = Invoke-Api MarkaController POST '/api/markalar' 'Reuse business name after soft delete' @(201) @{markaAdi="$prefix`_MARKA_DELETE"}
+    Assert-Db MarkaController POST '/api/markalar' 'Reused name has one active and one deleted row' "SELECT COUNT(*) FROM MARKA WHERE MARKA_ADI='$prefix`_MARKA_DELETE' AND ((SILINDI=TRUE AND GUID='$($candidate.Json.guid)') OR (SILINDI=FALSE AND GUID='$($recreated.Json.guid)'));" '2' | Out-Null
 
     # ModelController.
     $r = Invoke-Api ModelController POST '/api/modeller' Create @(201) @{modelAdi="$prefix`_MODEL";aciklama='Codex E2E';markaGuid=$ids.Marka;kategoriGuid=$ids.Kategori} 'PENDING'
@@ -161,7 +166,10 @@ try {
     Invoke-Api ModelController POST '/api/modeller' 'Foreign marka not found' @(404) @{modelAdi='BAD';markaGuid='CODEX_MISSING'} | Out-Null
     $candidate = Invoke-Api ModelController POST '/api/modeller' 'Delete candidate create' @(201) @{modelAdi="$prefix`_MODEL_DELETE";markaGuid=$ids.Marka}
     Invoke-Api ModelController DELETE "/api/modeller/$($candidate.Json.guid)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db ModelController DELETE '/api/modeller/{guid}' 'Delete DB' "SELECT COUNT(*) FROM MODEL WHERE GUID='$($candidate.Json.guid)';" '0' | Out-Null
+    Assert-Db ModelController DELETE '/api/modeller/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM MODEL WHERE GUID='$($candidate.Json.guid)' AND SILINDI=TRUE;" '1' | Out-Null
+    $afterDeleteList = Invoke-Api ModelController GET '/api/modeller' 'List after delete' @(200) $null 'YES'
+    Assert-Value ModelController GET '/api/modeller' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $candidate.Json.guid).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api ModelController DELETE "/api/modeller/$($candidate.Json.guid)" 'Second delete' @(404) | Out-Null
 
     # FirmaController.
     $firmaBody = @{ad="$prefix`_FIRMA";yetkiliKisi='Codex';durum='AKTIF';kaynakAlani='DEMIRBAS'}
@@ -177,8 +185,11 @@ try {
     Invoke-Api FirmaController GET '/api/firmalar/CODEX_MISSING' 'Not found' @(404) | Out-Null
     $candidate = Invoke-Api FirmaController POST '/api/firmalar' 'Delete candidate create' @(201) @{ad="$prefix`_FIRMA_DELETE";kaynakAlani='DEMIRBAS'}
     Invoke-Api FirmaController DELETE "/api/firmalar/$($candidate.Json.guid)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db FirmaController DELETE '/api/firmalar/{guid}' 'Delete DB' "SELECT COUNT(*) FROM FIRMA WHERE GUID='$($candidate.Json.guid)';" '0' | Out-Null
+    Assert-Db FirmaController DELETE '/api/firmalar/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM FIRMA WHERE GUID='$($candidate.Json.guid)' AND SILINDI=TRUE;" '1' | Out-Null
     Invoke-Api FirmaController GET "/api/firmalar/$($candidate.Json.guid)" 'Read after delete' @(404) | Out-Null
+    $afterDeleteList = Invoke-Api FirmaController GET '/api/firmalar' 'List after delete' @(200) $null 'YES'
+    Assert-Value FirmaController GET '/api/firmalar' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $candidate.Json.guid).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api FirmaController DELETE "/api/firmalar/$($candidate.Json.guid)" 'Second delete' @(404) | Out-Null
 
     # IhaleController.
     $ihaleBody = @{firmaGuid=$ids.Firma;ad="$prefix`_IHALE";ihaleTarihi='2026-01-01T10:00:00';durum='AKTIF'}
@@ -194,8 +205,11 @@ try {
     Invoke-Api IhaleController POST '/api/ihaleler' 'Foreign firma not found' @(404) @{firmaGuid='CODEX_MISSING';ad='BAD'} | Out-Null
     $candidate = Invoke-Api IhaleController POST '/api/ihaleler' 'Delete candidate create' @(201) @{firmaGuid=$ids.Firma;ad="$prefix`_IHALE_DELETE"}
     Invoke-Api IhaleController DELETE "/api/ihaleler/$($candidate.Json.guid)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db IhaleController DELETE '/api/ihaleler/{guid}' 'Delete DB' "SELECT COUNT(*) FROM IHALE WHERE GUID='$($candidate.Json.guid)';" '0' | Out-Null
+    Assert-Db IhaleController DELETE '/api/ihaleler/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM IHALE WHERE GUID='$($candidate.Json.guid)' AND SILINDI=TRUE;" '1' | Out-Null
     Invoke-Api IhaleController GET "/api/ihaleler/$($candidate.Json.guid)" 'Read after delete' @(404) | Out-Null
+    $afterDeleteList = Invoke-Api IhaleController GET '/api/ihaleler' 'List after delete' @(200) $null 'YES'
+    Assert-Value IhaleController GET '/api/ihaleler' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $candidate.Json.guid).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api IhaleController DELETE "/api/ihaleler/$($candidate.Json.guid)" 'Second delete' @(404) | Out-Null
 
     # DepoController, two dependency records and one delete candidate.
     foreach ($label in @('A','B')) {
@@ -211,8 +225,11 @@ try {
     Invoke-Api DepoController GET '/api/depolar/CODEX_MISSING' 'Not found' @(404) | Out-Null
     $candidate = Invoke-Api DepoController POST '/api/depolar' 'Delete candidate create' @(201) @{ad="$prefix`_DEPO_DELETE"}
     Invoke-Api DepoController DELETE "/api/depolar/$($candidate.Json.guid)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db DepoController DELETE '/api/depolar/{guid}' 'Delete DB' "SELECT COUNT(*) FROM DEPO WHERE GUID='$($candidate.Json.guid)';" '0' | Out-Null
+    Assert-Db DepoController DELETE '/api/depolar/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM DEPO WHERE GUID='$($candidate.Json.guid)' AND SILINDI=TRUE;" '1' | Out-Null
     Invoke-Api DepoController GET "/api/depolar/$($candidate.Json.guid)" 'Read after delete' @(404) | Out-Null
+    $afterDeleteList = Invoke-Api DepoController GET '/api/depolar' 'List after delete' @(200) $null 'YES'
+    Assert-Value DepoController GET '/api/depolar' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $candidate.Json.guid).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api DepoController DELETE "/api/depolar/$($candidate.Json.guid)" 'Second delete' @(404) | Out-Null
 
     # EnvanterController: exercise every route through both aliases.
     $env1Body = @{envanterAdi="$prefix`_DEMIRBAS";envanterTuru='DEMIRBAS';depoGuid=$ids.DepoA;modelGuid=$ids.Model;demirbasNumarasi=900001;seriNo="$prefix`_SERI";barkod="$prefix`_BARKOD";sube=1;aciklama='Codex E2E';ilSubeDaireBaskanlikNumarasi='34';detay=@{alimYolu=1;alimTuru='IHALE';saymanlikNo='CODEX';ihaleGuid=$ids.Ihale;firmaGuid=$ids.Firma;garantiBaslangicTarihi='2026-01-01T00:00:00';garantiBitisTarihi='2027-01-01T00:00:00'}}
@@ -243,6 +260,23 @@ try {
     Invoke-Api EnvanterController DELETE "/api/envanter/$($ids.Envanter1)" 'Delete blocked by audit history' @(422) $null 'YES' | Out-Null
     Invoke-Api EnvanterController DELETE "/api/envanterler/$($ids.Envanter2)" 'Delete blocked by audit history' @(422) $null 'YES' | Out-Null
 
+    $deleteBody = @{envanterAdi="$prefix`_ENVANTER_DELETE";envanterTuru='SARF';depoGuid=$ids.DepoA;modelGuid=$ids.Model;aciklama='Soft delete E2E'}
+    $deleteCandidate = Invoke-Api EnvanterController POST '/api/envanter' 'Soft delete candidate create' @(201) $deleteBody 'PENDING'
+    $ids.EnvanterDelete = $deleteCandidate.Json.guid
+    Invoke-Sql @"
+DELETE FROM DEPO_ZIMMET_HAREKET WHERE ENVANTER_GUID='$($ids.EnvanterDelete)';
+COMMIT;
+"@ | Out-Null
+    Invoke-Api EnvanterController DELETE "/api/envanter/$($ids.EnvanterDelete)" 'Soft delete without audit history' @(204) $null 'PENDING' | Out-Null
+    Assert-Db EnvanterController DELETE '/api/envanter/{guid}' 'Soft delete DB + detail preserved' "SELECT COUNT(*) FROM ENVANTER e JOIN ENVANTER_DETAY d ON d.ENVANTER_GUID=e.GUID WHERE e.GUID='$($ids.EnvanterDelete)' AND e.SILINDI=TRUE AND d.SILINDI=FALSE;" '1' | Out-Null
+    Invoke-Api EnvanterController GET "/api/envanter/$($ids.EnvanterDelete)" 'Read after soft delete singular' @(404) | Out-Null
+    Invoke-Api EnvanterController GET "/api/envanterler/$($ids.EnvanterDelete)" 'Read after soft delete plural' @(404) | Out-Null
+    foreach ($base in @('/api/envanter','/api/envanterler')) {
+        $afterDeleteList = Invoke-Api EnvanterController GET $base "List after soft delete $base" @(200) $null 'YES'
+        Assert-Value EnvanterController GET $base 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $ids.EnvanterDelete).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    }
+    Invoke-Api EnvanterController DELETE "/api/envanterler/$($ids.EnvanterDelete)" 'Second delete' @(404) | Out-Null
+
     # AparatController.
     $r = Invoke-Api AparatController POST '/api/aparatlar' Create @(201) @{envanterGuid=$ids.Envanter1;aparatAdi="$prefix`_APARAT";aciklama='Codex E2E'} 'PENDING'
     $ids.Aparat = $r.Json.guid
@@ -252,8 +286,11 @@ try {
     Invoke-Api AparatController POST '/api/aparatlar' 'Validation empty body' @(400) @{} | Out-Null
     Invoke-Api AparatController POST '/api/aparatlar' 'Foreign envanter not found' @(404) @{envanterGuid='CODEX_MISSING';aparatAdi='BAD'} | Out-Null
     Invoke-Api AparatController DELETE "/api/aparatlar/$($ids.Aparat)" Delete @(204) $null 'PENDING' | Out-Null
-    Assert-Db AparatController DELETE '/api/aparatlar/{guid}' 'Delete DB' "SELECT COUNT(*) FROM APARAT WHERE GUID='$($ids.Aparat)';" '0' | Out-Null
+    Assert-Db AparatController DELETE '/api/aparatlar/{guid}' 'Soft delete DB' "SELECT COUNT(*) FROM APARAT WHERE GUID='$($ids.Aparat)' AND SILINDI=TRUE;" '1' | Out-Null
     Invoke-Api AparatController GET "/api/aparatlar/$($ids.Aparat)" 'Read after delete' @(404) | Out-Null
+    $afterDeleteList = Invoke-Api AparatController GET '/api/aparatlar' 'List after delete' @(200) $null 'YES'
+    Assert-Value AparatController GET '/api/aparatlar' 'Deleted record excluded from list' (@($afterDeleteList.Json | Where-Object guid -eq $ids.Aparat).Count -eq 0) $afterDeleteList.Raw | Out-Null
+    Invoke-Api AparatController DELETE "/api/aparatlar/$($ids.Aparat)" 'Second delete' @(404) | Out-Null
     $ids.Aparat = $null
 
     # ZimmetController business flow on Envanter1.

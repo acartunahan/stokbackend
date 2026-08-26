@@ -1,6 +1,7 @@
 package com.stoktakip.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.stoktakip.dto.MarkaCreateRequest;
 import com.stoktakip.dto.MarkaUpdateRequest;
@@ -8,6 +9,7 @@ import com.stoktakip.dto.ModelCreateRequest;
 import com.stoktakip.dto.ModelUpdateRequest;
 import com.stoktakip.entity.Marka;
 import com.stoktakip.entity.Model;
+import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.MarkaRepository;
 import com.stoktakip.repository.ModelRepository;
 import com.stoktakip.service.MarkaService;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -30,6 +33,7 @@ class MarkaModelControllerIntegrationTest {
     @Autowired ModelService modelService;
     @Autowired MarkaRepository markaRepository;
     @Autowired ModelRepository modelRepository;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -86,6 +90,12 @@ class MarkaModelControllerIntegrationTest {
 
         markaService.delete(created.guid());
         assertThat(markaRepository.findById(created.guid())).isEmpty();
+        assertThat(jdbcTemplate.queryForObject(
+            "select count(*) from MARKA where GUID = ? and SILINDI = true",
+            Integer.class, created.guid())).isEqualTo(1);
+        assertThat(markaService.getAll()).noneMatch(marka -> marka.guid().equals(created.guid()));
+        assertThatThrownBy(() -> markaService.delete(created.guid()))
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -106,6 +116,12 @@ class MarkaModelControllerIntegrationTest {
 
         modelService.delete("model-thinkpad");
         assertThat(modelRepository.findById("model-thinkpad")).isEmpty();
+        assertThat(jdbcTemplate.queryForObject(
+            "select count(*) from MODEL where GUID = ? and SILINDI = true",
+            Integer.class, "model-thinkpad")).isEqualTo(1);
+        assertThat(modelService.getAll()).noneMatch(model -> model.guid().equals("model-thinkpad"));
+        assertThatThrownBy(() -> modelService.delete("model-thinkpad"))
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

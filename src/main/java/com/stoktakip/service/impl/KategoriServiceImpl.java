@@ -71,10 +71,10 @@ public class KategoriServiceImpl implements KategoriService {
     @Transactional
     public void delete(String guid) {
         Kategori kategori = find(guid);
-        if (!kategori.getAltKategoriler().isEmpty()) {
+        if (kategori.getAltKategoriler().stream().anyMatch(child -> !Boolean.TRUE.equals(child.getSilindi()))) {
             throw new BusinessRuleException("Alt kategorisi bulunan kategori silinemez");
         }
-        if (!kategori.getModeller().isEmpty()) {
+        if (kategori.getModeller().stream().anyMatch(model -> !Boolean.TRUE.equals(model.getSilindi()))) {
             throw new BusinessRuleException("Model atanmış kategori silinemez");
         }
 
@@ -126,6 +126,7 @@ public class KategoriServiceImpl implements KategoriService {
             throw new BusinessRuleException("Kategori ağacında döngü tespit edildi");
         }
         List<KategoriTreeResponse> children = kategori.getAltKategoriler().stream()
+            .filter(child -> !Boolean.TRUE.equals(child.getSilindi()))
             .map(child -> toTreeResponse(child, path))
             .toList();
         path.remove(kategori.getGuid());

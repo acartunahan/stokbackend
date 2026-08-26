@@ -7,7 +7,7 @@ import jakarta.persistence.PreUpdate;
 import java.time.LocalDateTime;
 
 @MappedSuperclass
-public abstract class BaseEntity {
+public abstract class BaseEntity extends SoftDeleteEntity {
 
     @Column(name = "OLUSTURMA_TARIHI")
     private LocalDateTime olusturmaTarihi;

@@ -31,7 +31,7 @@ public class MarkaServiceImpl implements MarkaService {
     @Override
     public List<MarkaResponse> searchByName(String adi) {
         String aramaMetni = normalizeSearchTerm(adi);
-        return repository.findByMarkaAdiContainingIgnoreCase(aramaMetni).stream()
+        return repository.findByMarkaAdiContainingIgnoreCaseAndSilindiFalse(aramaMetni).stream()
             .map(this::toResponse)
             .toList();
     }

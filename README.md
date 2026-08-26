@@ -36,6 +36,12 @@ mvn spring-boot:run -Dspring-boot.run.profiles=docker
 değerlerini varsayılan olarak kullanır; `TARGET_DB_URL`, `TARGET_DB_USERNAME` ve
 `TARGET_DB_PASSWORD` ortam değişkenleri tanımlanırsa bu varsayılanları ezer.
 
+Yeni uygulama tabloları `SILINDI BOOLEAN DEFAULT FALSE NOT NULL` alanıyla merkezi
+soft-delete kullanır. Yeni Docker volume'larında Hibernate bu alanı şemayla birlikte
+oluşturur. Mevcut local volume'u yükseltmek için `docker/oracle/init/002-add-soft-delete.sql`
+dosyası `SYSTEM` kullanıcısıyla `FREEPDB1` üzerinde bir kez çalıştırılabilir; script
+idempotent'tir ve mevcut kolonları değiştirmez.
+
 ## Ortam degiskenleri
 
 ```bash

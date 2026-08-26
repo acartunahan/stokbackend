@@ -51,12 +51,12 @@ class MarkaModelServiceTest {
 
     @Test
     void markaAramasiTrimEdilipRepositorySeviyesindeYapilir() {
-        when(markaRepository.findByMarkaAdiContainingIgnoreCase("sAmS"))
+        when(markaRepository.findByMarkaAdiContainingIgnoreCaseAndSilindiFalse("sAmS"))
             .thenReturn(List.of(marka("m-1", "Samsung")));
 
         assertThat(markaService.searchByName("  sAmS "))
             .extracting(response -> response.markaAdi()).containsExactly("Samsung");
-        verify(markaRepository).findByMarkaAdiContainingIgnoreCase("sAmS");
+        verify(markaRepository).findByMarkaAdiContainingIgnoreCaseAndSilindiFalse("sAmS");
     }
 
     @Test
@@ -105,13 +105,13 @@ class MarkaModelServiceTest {
     void modelAramasiTrimEdilipRepositorySeviyesindeYapilir() {
         when(markaRepository.findById("marka-1"))
             .thenReturn(Optional.of(marka("marka-1", "Lenovo")));
-        when(modelRepository.findByMarka_GuidAndModelAdiContainingIgnoreCase("marka-1", "tHiNk"))
+        when(modelRepository.findByMarka_GuidAndModelAdiContainingIgnoreCaseAndSilindiFalse("marka-1", "tHiNk"))
             .thenReturn(List.of(model("model-1", "ThinkPad")));
 
         assertThat(modelService.searchByMarkaAndName(" marka-1 ", " tHiNk "))
             .extracting(response -> response.modelAdi()).containsExactly("ThinkPad");
         verify(modelRepository)
-            .findByMarka_GuidAndModelAdiContainingIgnoreCase("marka-1", "tHiNk");
+            .findByMarka_GuidAndModelAdiContainingIgnoreCaseAndSilindiFalse("marka-1", "tHiNk");
     }
 
     @Test

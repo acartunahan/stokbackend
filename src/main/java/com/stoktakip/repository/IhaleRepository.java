@@ -8,12 +8,13 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface IhaleRepository extends JpaRepository<Ihale, String> {
+public interface IhaleRepository extends SoftDeleteRepository<Ihale, String> {
     @Override
     @EntityGraph(attributePaths = "firma")
+    @Query("select i from Ihale i where i.silindi = false")
     List<Ihale> findAll();
 
     @EntityGraph(attributePaths = "firma")
-    @Query("select i from Ihale i where i.guid = :guid")
+    @Query("select i from Ihale i where i.guid = :guid and i.silindi = false")
     Optional<Ihale> findDetayByGuid(@Param("guid") String guid);
 }

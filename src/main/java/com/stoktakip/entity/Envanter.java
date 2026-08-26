@@ -2,7 +2,6 @@ package com.stoktakip.entity;
 
 import jakarta.persistence.Id;
 import com.stoktakip.enums.EnvanterTuru;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -20,7 +19,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "ENVANTER")
-public class Envanter {
+public class Envanter extends SoftDeleteEntity {
 
     @Id
     @Column(name = "GUID", length = 128)
@@ -56,7 +55,7 @@ public class Envanter {
     @JoinColumn(name = "MODEL_GUID", referencedColumnName = "GUID")
     private Model model;
 
-    @OneToOne(mappedBy = "envanter", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "envanter", fetch = FetchType.LAZY)
     private EnvanterDetay detay;
 
     @Enumerated(EnumType.STRING)
