@@ -73,12 +73,6 @@ public class Depo extends SoftDeleteEntity {
     @OneToMany(mappedBy = "depo", fetch = FetchType.LAZY)
     private List<SayimDetay> sayimDetaylari = new ArrayList<>();
 
-    @OneToMany(mappedBy = "suankiDepo", fetch = FetchType.LAZY)
-    private List<IadeOnayKaydi> suankiDepoIadeOnayKayitlari = new ArrayList<>();
-
-    @OneToMany(mappedBy = "gidecegiDepo", fetch = FetchType.LAZY)
-    private List<IadeOnayKaydi> gidecegiDepoIadeOnayKayitlari = new ArrayList<>();
-
     @OneToMany(mappedBy = "depo", fetch = FetchType.LAZY)
     private List<SarfLogKaydi> sarfLogKayitlari = new ArrayList<>();
 
@@ -144,22 +138,6 @@ public class Depo extends SoftDeleteEntity {
 
     public void setSayimDetaylari(List<SayimDetay> sayimDetaylari) {
         this.sayimDetaylari = sayimDetaylari;
-    }
-
-    public List<IadeOnayKaydi> getSuankiDepoIadeOnayKayitlari() {
-        return suankiDepoIadeOnayKayitlari;
-    }
-
-    public void setSuankiDepoIadeOnayKayitlari(List<IadeOnayKaydi> suankiDepoIadeOnayKayitlari) {
-        this.suankiDepoIadeOnayKayitlari = suankiDepoIadeOnayKayitlari;
-    }
-
-    public List<IadeOnayKaydi> getGidecegiDepoIadeOnayKayitlari() {
-        return gidecegiDepoIadeOnayKayitlari;
-    }
-
-    public void setGidecegiDepoIadeOnayKayitlari(List<IadeOnayKaydi> gidecegiDepoIadeOnayKayitlari) {
-        this.gidecegiDepoIadeOnayKayitlari = gidecegiDepoIadeOnayKayitlari;
     }
 
     public List<SarfLogKaydi> getSarfLogKayitlari() {

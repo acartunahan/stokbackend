@@ -38,8 +38,6 @@ BEGIN
     add_soft_delete_column('ENVANTER_ACIKLAMA');
     add_soft_delete_column('ENVANTER_DETAY');
     add_soft_delete_column('FIRMA');
-    add_soft_delete_column('IADE_HAVUZ_KAYDI');
-    add_soft_delete_column('IADE_ONAY_KAYDI');
     add_soft_delete_column('IHALE');
     add_soft_delete_column('KATEGORI');
     add_soft_delete_column('MARKA');

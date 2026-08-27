@@ -74,12 +74,6 @@ public class Envanter extends SoftDeleteEntity {
     private List<SayimDetay> sayimDetaylari = new ArrayList<>();
 
     @OneToMany(mappedBy = "envanter", fetch = FetchType.LAZY)
-    private List<IadeHavuzKaydi> iadeHavuzKayitlari = new ArrayList<>();
-
-    @OneToMany(mappedBy = "envanter", fetch = FetchType.LAZY)
-    private List<IadeOnayKaydi> iadeOnayKayitlari = new ArrayList<>();
-
-    @OneToMany(mappedBy = "envanter", fetch = FetchType.LAZY)
     private List<Aparat> aparatlar = new ArrayList<>();
 
     @OneToMany(mappedBy = "envanter", fetch = FetchType.LAZY)
