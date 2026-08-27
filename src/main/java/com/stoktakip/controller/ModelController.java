@@ -4,6 +4,9 @@ import com.stoktakip.dto.ModelCreateRequest;
 import com.stoktakip.dto.ModelResponse;
 import com.stoktakip.dto.ModelUpdateRequest;
 import com.stoktakip.service.ModelService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/modeller")
+@Tag(name = "Model", description = "Marka ve kategori bağlantılı envanter model tanımlarının yönetimi")
 public class ModelController {
     private final ModelService service;
 
@@ -28,29 +32,41 @@ public class ModelController {
     }
 
     @GetMapping
-    public List<ModelResponse> getAll(@RequestParam(required = false) String markaGuid) {
+    @Operation(operationId = "listModels", summary = "Modelleri Listele",
+        description = "Aktif model tanımlarını listeler; marka GUID değeri verilirse sonuçları ilgili markayla sınırlar.")
+    public List<ModelResponse> getAll(
+        @Parameter(description = "Sonuçları sınırlandıracak markanın benzersiz GUID değeri")
+        @RequestParam(required = false) String markaGuid
+    ) {
         return markaGuid == null || markaGuid.isBlank()
             ? service.getAll()
             : service.getByMarkaGuid(markaGuid);
     }
 
     @GetMapping("/search")
+    @Operation(operationId = "searchModelsByBrandAndName",
+        summary = "Marka ve Model Adıyla Model Bul",
+        description = "Belirtilen markaya ait modelleri model adındaki metne göre büyük-küçük harf duyarsız arar.")
     public List<ModelResponse> search(
-        @RequestParam String markaGuid,
-        @RequestParam String adi
+        @Parameter(description = "Modelleri aranacak markanın benzersiz GUID değeri") @RequestParam String markaGuid,
+        @Parameter(description = "Model adında aranacak metin") @RequestParam String adi
     ) {
         return service.searchByMarkaAndName(markaGuid, adi);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(operationId = "createModel", summary = "Model Oluştur",
+        description = "Mevcut bir markaya ve isteğe bağlı kategoriye bağlı yeni model tanımı oluşturur.")
     public ModelResponse create(@Valid @RequestBody ModelCreateRequest request) {
         return service.create(request);
     }
 
     @PutMapping("/{guid}")
+    @Operation(operationId = "updateModel", summary = "Model Güncelle",
+        description = "Belirtilen aktif modelin ad, açıklama, marka ve kategori bağlantılarını günceller.")
     public ModelResponse update(
-        @PathVariable String guid,
+        @Parameter(description = "Güncellenecek modelin benzersiz GUID değeri") @PathVariable String guid,
         @Valid @RequestBody ModelUpdateRequest request
     ) {
         return service.update(guid, request);
@@ -58,5 +74,9 @@ public class ModelController {
 
     @DeleteMapping("/{guid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String guid) { service.delete(guid); }
+    @Operation(operationId = "deleteModel", summary = "Model Sil",
+        description = "Aktif envanter bağlantısı olmayan model kaydını soft-delete yöntemiyle siler.")
+    public void delete(
+        @Parameter(description = "Silinecek modelin benzersiz GUID değeri") @PathVariable String guid
+    ) { service.delete(guid); }
 }

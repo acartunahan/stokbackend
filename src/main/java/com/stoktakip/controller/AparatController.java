@@ -3,6 +3,9 @@ package com.stoktakip.controller;
 import com.stoktakip.dto.AparatCreateRequest;
 import com.stoktakip.dto.AparatResponse;
 import com.stoktakip.service.AparatService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/aparatlar")
+@Tag(name = "Aparat", description = "Envanterlere bağlı aparat kayıtlarının yönetimi")
 public class AparatController {
     private final AparatService service;
 
@@ -25,18 +29,32 @@ public class AparatController {
     }
 
     @GetMapping
+    @Operation(operationId = "listAccessories", summary = "Aparatları Listele",
+        description = "Aktif aparat kayıtlarını bağlı oldukları envanter bilgileriyle listeler.")
     public List<AparatResponse> getAll() { return service.getAll(); }
 
     @GetMapping("/{guid}")
-    public AparatResponse getById(@PathVariable String guid) { return service.getById(guid); }
+    @Operation(operationId = "getAccessoryDetail", summary = "Aparat Detayını Getir",
+        description = "Benzersiz GUID değeriyle aktif bir aparat kaydının detayını getirir.")
+    public AparatResponse getById(
+        @Parameter(description = "Detayı getirilecek aparatın benzersiz GUID değeri")
+        @PathVariable String guid
+    ) { return service.getById(guid); }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(operationId = "createAccessory", summary = "Aparat Oluştur",
+        description = "Belirtilen envantere bağlı yeni bir aparat kaydı oluşturur.")
     public AparatResponse create(@Valid @RequestBody AparatCreateRequest request) {
         return service.create(request);
     }
 
     @DeleteMapping("/{guid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String guid) { service.delete(guid); }
+    @Operation(operationId = "deleteAccessory", summary = "Aparat Sil",
+        description = "Belirtilen aktif aparat kaydını soft-delete yöntemiyle siler.")
+    public void delete(
+        @Parameter(description = "Silinecek aparatın benzersiz GUID değeri")
+        @PathVariable String guid
+    ) { service.delete(guid); }
 }

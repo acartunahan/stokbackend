@@ -4,11 +4,14 @@ import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -33,6 +36,26 @@ public class ApiExceptionHandler {
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .orElse("Geçersiz istek");
         return Map.of("message", message);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> requestParameterType(MethodArgumentTypeMismatchException exception) {
+        return Map.of("message", exception.getName() + ": geçersiz değer");
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> missingRequestParameter(
+        MissingServletRequestParameterException exception
+    ) {
+        return Map.of("message", exception.getParameterName() + ": zorunludur");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> unreadableRequestBody() {
+        return Map.of("message", "Geçersiz istek gövdesi");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

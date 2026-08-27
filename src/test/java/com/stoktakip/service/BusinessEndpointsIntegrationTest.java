@@ -114,6 +114,37 @@ class BusinessEndpointsIntegrationTest {
     }
 
     @Test
+    void birlesikTimelineIstenenIdSiralamasiVePaginationUygular() {
+        String suffix = suffix();
+        Depo kaynak = depo("timeline-sort-source-" + suffix);
+        Depo hedef = depo("timeline-sort-target-" + suffix);
+        Envanter envanter = envanter("timeline-sort-item-" + suffix, "Timeline Sort",
+            null, null, null, kaynak);
+
+        zimmetService.depoyaTasi(new com.stoktakip.dto.DepoTransferTalebi(
+            envanter.getGuid(), hedef.getGuid(), "first", "tester"));
+        zimmetService.depoyaTasi(new com.stoktakip.dto.DepoTransferTalebi(
+            envanter.getGuid(), kaynak.getGuid(), "second", "tester"));
+        zimmetService.personeleZimmetle(new com.stoktakip.dto.ZimmetTalebi(
+            envanter.getGuid(), "P-" + suffix, "third", "tester"));
+
+        var pages = java.util.stream.IntStream.range(0, 3)
+            .mapToObj(page -> hareketService.getEnvanterHareketleri(
+                envanter.getGuid(), null, null,
+                PageRequest.of(page, 1, Sort.by("id").ascending())))
+            .toList();
+        var ids = pages.stream()
+            .flatMap(page -> page.content().stream())
+            .map(item -> item.hareketId())
+            .toList();
+
+        assertThat(pages.getFirst().totalElements()).isEqualTo(3);
+        assertThat(pages.getFirst().totalPages()).isEqualTo(3);
+        assertThat(pages).allSatisfy(page -> assertThat(page.content()).hasSize(1));
+        assertThat(ids).isSorted();
+    }
+
+    @Test
     void topluTransferBasariliVeGecersizKalemdeAtomicRollbackYapar() {
         String suffix = suffix();
         Depo kaynak = depo("bulk-source-" + suffix);

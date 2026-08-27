@@ -70,7 +70,7 @@ public class HareketServiceImpl implements HareketService {
         if (fetchSizeLong > Integer.MAX_VALUE) {
             throw new BusinessRuleException("İstenen sayfa numarası çok büyük");
         }
-        Pageable sourcePage = PageRequest.of(0, (int) fetchSizeLong, TIMELINE_SORT);
+        Pageable sourcePage = PageRequest.of(0, (int) fetchSizeLong, safe.getSort());
         Page<PersonelZimmetHareket> personelPage = personelHareketRepository
             .findTimelineByEnvanterGuid(guid, baslangicTarihi, bitisTarihi, sourcePage);
         Page<DepoZimmetHareket> depoPage = depoHareketRepository
@@ -80,11 +80,7 @@ public class HareketServiceImpl implements HareketService {
             personelPage.getNumberOfElements() + depoPage.getNumberOfElements());
         personelPage.forEach(h -> merged.add(map(h)));
         depoPage.forEach(h -> merged.add(map(h)));
-        merged.sort(Comparator.comparing(EnvanterHareketResponse::tarih,
-                Comparator.nullsLast(Comparator.reverseOrder()))
-            .thenComparing(EnvanterHareketResponse::hareketId,
-                Comparator.nullsLast(Comparator.reverseOrder()))
-            .thenComparing(EnvanterHareketResponse::kaynakTuru));
+        merged.sort(timelineComparator(safe.getSort()));
 
         int from = Math.min(safe.getPageNumber() * safe.getPageSize(), merged.size());
         int to = Math.min(from + safe.getPageSize(), merged.size());
@@ -169,5 +165,28 @@ public class HareketServiceImpl implements HareketService {
 
     private static String ad(Depo depo) {
         return depo == null ? null : depo.getAd();
+    }
+
+    private static Comparator<EnvanterHareketResponse> timelineComparator(Sort sort) {
+        Comparator<EnvanterHareketResponse> comparator = null;
+        for (Sort.Order order : sort) {
+            Comparator<EnvanterHareketResponse> next = switch (order.getProperty()) {
+                case "olusturmaTarihi" -> Comparator.comparing(
+                    EnvanterHareketResponse::tarih,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+                case "id" -> Comparator.comparing(
+                    EnvanterHareketResponse::hareketId,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+                default -> throw new BusinessRuleException(
+                    "Desteklenmeyen sıralama alanı: " + order.getProperty());
+            };
+            if (order.isDescending()) {
+                next = next.reversed();
+            }
+            comparator = comparator == null ? next : comparator.thenComparing(next);
+        }
+        Comparator<EnvanterHareketResponse> stableTieBreaker = Comparator.comparing(
+            EnvanterHareketResponse::kaynakTuru, Comparator.nullsLast(String::compareTo));
+        return comparator == null ? stableTieBreaker : comparator.thenComparing(stableTieBreaker);
     }
 }
