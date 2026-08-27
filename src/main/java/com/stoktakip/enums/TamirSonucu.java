@@ -1,0 +1,12 @@
+package com.stoktakip.enums;
+
+public enum TamirSonucu {
+    BEKLIYOR,
+    TAMIR_EDILDI,
+    TAMIR_EDILEMEDI,
+    PARCA_DEGISIMI_YAPILDI,
+    CIHAZ_DEGISIMI_YAPILDI,
+    GARANTI_KAPSAMINDA,
+    GARANTI_DISI,
+    HURDAYA_AYRILDI
+}

@@ -6,6 +6,7 @@ import com.stoktakip.entity.PersonelZimmetHareket;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,6 +15,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PersonelZimmetHareketRepository extends SoftDeleteRepository<PersonelZimmetHareket, Long> {
+
+    @Query("""
+        select h from PersonelZimmetHareket h
+        where h.envanter.guid in :envanterGuidleri
+          and h.olusturmaTarihi <= :enGecTarih
+          and h.silindi = false
+        order by h.envanter.guid, h.olusturmaTarihi, h.id
+        """)
+    List<PersonelZimmetHareket> findHistoricalEvents(
+        @Param("envanterGuidleri") Collection<String> envanterGuidleri,
+        @Param("enGecTarih") LocalDateTime enGecTarih
+    );
 
     @EntityGraph(attributePaths = {"envanter"})
     @Query("""

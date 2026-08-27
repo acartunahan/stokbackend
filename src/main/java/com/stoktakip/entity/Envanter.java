@@ -82,6 +82,9 @@ public class Envanter extends SoftDeleteEntity {
     @OneToMany(mappedBy = "envanter", fetch = FetchType.LAZY)
     private List<Aparat> aparatlar = new ArrayList<>();
 
+    @OneToMany(mappedBy = "envanter", fetch = FetchType.LAZY)
+    private List<Ariza> arizalar = new ArrayList<>();
+
     public String getGuid() { return guid; }
     public void setGuid(String guid) { this.guid = guid; }
     public Depo getDepo() { return depo; }
