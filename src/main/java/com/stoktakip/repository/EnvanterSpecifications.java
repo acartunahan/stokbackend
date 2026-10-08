@@ -27,7 +27,7 @@ public final class EnvanterSpecifications {
             if (filter == null) {
                 return builder.and(predicates.toArray(Predicate[]::new));
             }
-            Joins joins = new Joins(root);
+            Joins joins = new Joins(root, builder);
             in(predicates, () -> joins.model().join("kategori", JoinType.LEFT).get("guid"),
                 filter.kategoriGuid());
             in(predicates, () -> joins.model().join("marka", JoinType.LEFT).get("guid"),
@@ -67,14 +67,20 @@ public final class EnvanterSpecifications {
         };
     }
 
-    /** İlişki join'lerini yalnız gerektiğinde, bir kez kurar ve yeniden kullanır. */
+    /**
+     * İlişki join'lerini yalnız gerektiğinde, bir kez kurar ve yeniden kullanır. Soft-silinmiş
+     * detay join koşulunda dışlanır: garanti/firma süzgeci onu "detay yok" sayar, envanter
+     * kendisi listeden düşmez.
+     */
     private static final class Joins {
         private final Root<Envanter> root;
+        private final CriteriaBuilder builder;
         private Join<Envanter, Model> model;
         private Join<Envanter, EnvanterDetay> detay;
 
-        private Joins(Root<Envanter> root) {
+        private Joins(Root<Envanter> root, CriteriaBuilder builder) {
             this.root = root;
+            this.builder = builder;
         }
 
         Join<Envanter, Model> model() {
@@ -87,6 +93,7 @@ public final class EnvanterSpecifications {
         Join<Envanter, EnvanterDetay> detay() {
             if (detay == null) {
                 detay = root.join("detay", JoinType.LEFT);
+                detay.on(builder.isFalse(detay.get("silindi")));
             }
             return detay;
         }

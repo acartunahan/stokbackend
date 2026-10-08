@@ -214,6 +214,37 @@ class EnvanterFiltreIntegrationTest {
         assertThat(guids(filter().q("indirim-" + s).build())).hasSize(2);
     }
 
+    @Test
+    void softSilinmisDetayGarantiVeFirmaSuzgecineGirmez() {
+        String q = "Silinmis-" + s;
+        Envanter canli = garantiEnvanteri("d1", q);
+        Envanter silik = garantiEnvanteri("d2", q);
+        LocalDateTime bitis = LocalDateTime.of(2026, 4, 1, 0, 0);
+        detayKaydet(canli, bitis, firma, false);
+        detayKaydet(silik, bitis, firma, true);
+
+        assertThat(guids(filter().q(q).garanti(LocalDateTime.of(2026, 1, 1, 0, 0), null).build()))
+            .containsExactly(id("d1"));
+        assertThat(guids(filter().q(q).garanti(null, LocalDateTime.of(2026, 12, 31, 0, 0)).build()))
+            .containsExactly(id("d1"));
+        assertThat(guids(filter().q(q).firma(firma.getGuid()).build()))
+            .containsExactly(id("d1"));
+        // Süzgeç yokken silinmiş detaylı envanter listede kalır (yalnız detay yok sayılır).
+        assertThat(guids(filter().q(q).build())).hasSize(2);
+    }
+
+    private void detayKaydet(Envanter envanter, LocalDateTime bitis, Firma f, boolean silindi) {
+        EnvanterDetay d = new EnvanterDetay();
+        d.setGuid("filtre-detay-" + envanter.getGuid());
+        d.setEnvanter(envanter);
+        d.setGarantiBitisTarihi(bitis);
+        d.setFirma(f);
+        if (silindi) {
+            d.softDelete();
+        }
+        detayRepository.saveAndFlush(d);
+    }
+
     private Envanter garantiEnvanteri(String ad, String q) {
         Envanter e = new Envanter();
         e.setGuid(id(ad));
