@@ -59,10 +59,10 @@ public class EnvanterController {
         @Parameter(description = "Demirbaş numarasına göre kesin filtre") @RequestParam(required = false) Long demirbasNumarasi,
         @Parameter(description = "Barkod değerine göre kesin filtre") @RequestParam(required = false) String barkod,
         @Parameter(description = "Envanter adı, seri no, barkod veya açıklamada aranacak metin") @RequestParam(required = false) String q,
-        @Parameter(description = "Garanti bitiş tarihi için dahil başlangıç zamanı (ISO tarih-saat)")
+        @Parameter(description = "Garanti bitiş tarihi için dahil başlangıç zamanı. Yerel tarih-saat (ör. 2026-01-01T00:00:00); Z ya da +03:00 gibi ofset eki kabul edilir ama yok sayılır, saat dönüştürülmez.")
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime garantiBitisBaslangic,
-        @Parameter(description = "Garanti bitiş tarihi için dahil bitiş zamanı (ISO tarih-saat)")
+        @Parameter(description = "Garanti bitiş tarihi için dahil bitiş zamanı. Yerel tarih-saat (ör. 2026-01-01T00:00:00); Z ya da +03:00 gibi ofset eki kabul edilir ama yok sayılır, saat dönüştürülmez.")
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime garantiBitisBitis,
         @PageableDefault(size = 20) Pageable pageable

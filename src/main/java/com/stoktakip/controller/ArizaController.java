@@ -41,14 +41,20 @@ public class ArizaController {
     @Operation(operationId = "listFaults", summary = "Arıza Kayıtlarını Listele",
         description = "Arızaları envanter, son durum, açık/kapalı bilgisi, tarih ve metin ölçütleriyle sayfalı listeler.")
     public PageResponse<ArizaResponse> list(
+        @Parameter(description = "Envanter GUID değerine göre kesin filtre")
         @RequestParam(required = false) String envanterGuid,
-        @Parameter(description = "Son duruma göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer")
+        @Parameter(description = "Son duruma göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer. "
+            + "kapandiMi ile VE ile birleşir: çelişen birleşim (ör. durumTipi=KAPATILDI&kapandiMi=false) hata vermez, boş sonuç döner.")
         @RequestParam(required = false) List<ArizaDurumTipi> durumTipi,
+        @Parameter(description = "Açık (false) ya da kapalı (true) arızalar; durumTipi ile VE ile birleşir")
         @RequestParam(required = false) Boolean kapandiMi,
+        @Parameter(description = "Arıza tarihi için dahil başlangıç zamanı. Yerel tarih-saat (ör. 2026-01-01T00:00:00); Z ya da +03:00 gibi ofset eki kabul edilir ama yok sayılır, saat dönüştürülmez.")
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime baslangicTarihi,
+        @Parameter(description = "Arıza tarihi için dahil bitiş zamanı; başlangıçtan önce olamaz (422). Yerel tarih-saat (ör. 2026-01-01T00:00:00); Z ya da +03:00 gibi ofset eki kabul edilir ama yok sayılır, saat dönüştürülmez.")
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime bitisTarihi,
+        @Parameter(description = "Arıza açıklaması, not veya envanter adında aranacak metin; % ve _ düz karakterdir")
         @RequestParam(required = false) String q,
         @PageableDefault(size = 20) Pageable pageable
     ) {
