@@ -79,12 +79,18 @@ public class DepoController {
         @Parameter(description = "Envanter türüne göre filtre; virgülle birden çok değer") @RequestParam(required = false) List<EnvanterTuru> envanterTuru,
         @Parameter(description = "Seri numarasına göre kesin filtre") @RequestParam(required = false) String seriNo,
         @Parameter(description = "Envanter adı, seri no, barkod veya açıklamada aranacak metin") @RequestParam(required = false) String q,
+        @Parameter(description = "Garanti bitiş tarihi için dahil başlangıç zamanı (ISO tarih-saat)")
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime garantiBitisBaslangic,
+        @Parameter(description = "Garanti bitiş tarihi için dahil bitiş zamanı (ISO tarih-saat)")
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime garantiBitisBitis,
         @PageableDefault(size = 20) Pageable pageable
     ) {
         // Depo yol değişkeninden gelir; serviste tek değere zorlanır.
         EnvanterFilter filter = new EnvanterFilter(
             kategoriGuid, markaGuid, modelGuid, null, null, envanterTuru,
-            seriNo, null, null, q);
+            seriNo, null, null, q, garantiBitisBaslangic, garantiBitisBitis);
         return envanterService.getByDepo(guid, filter, pageable);
     }
 

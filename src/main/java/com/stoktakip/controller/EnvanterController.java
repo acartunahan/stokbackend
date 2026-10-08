@@ -59,10 +59,17 @@ public class EnvanterController {
         @Parameter(description = "Demirbaş numarasına göre kesin filtre") @RequestParam(required = false) Long demirbasNumarasi,
         @Parameter(description = "Barkod değerine göre kesin filtre") @RequestParam(required = false) String barkod,
         @Parameter(description = "Envanter adı, seri no, barkod veya açıklamada aranacak metin") @RequestParam(required = false) String q,
+        @Parameter(description = "Garanti bitiş tarihi için dahil başlangıç zamanı (ISO tarih-saat)")
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime garantiBitisBaslangic,
+        @Parameter(description = "Garanti bitiş tarihi için dahil bitiş zamanı (ISO tarih-saat)")
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime garantiBitisBitis,
         @PageableDefault(size = 20) Pageable pageable
     ) {
         return service.search(new EnvanterFilter(kategoriGuid, markaGuid, modelGuid, depoGuid,
-            firmaGuid, envanterTuru, seriNo, demirbasNumarasi, barkod, q), pageable);
+            firmaGuid, envanterTuru, seriNo, demirbasNumarasi, barkod, q,
+            garantiBitisBaslangic, garantiBitisBitis), pageable);
     }
 
     @GetMapping("/lookup")

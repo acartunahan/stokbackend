@@ -21,6 +21,7 @@ import com.stoktakip.repository.FirmaRepository;
 import com.stoktakip.repository.KategoriRepository;
 import com.stoktakip.repository.MarkaRepository;
 import com.stoktakip.repository.ModelRepository;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -172,6 +173,55 @@ class EnvanterFiltreIntegrationTest {
             .hasMessage("kategoriGuid için en fazla 100 değer gönderilebilir");
     }
 
+    @Test
+    void garantiBitisAraligiSinirlarDahilSuzer() {
+        String q = "Garanti-" + s;
+        Envanter g1 = garantiEnvanteri("g1", q);
+        Envanter g2 = garantiEnvanteri("g2", q);
+        garantiEnvanteri("g3", q); // detaysız
+        Envanter g4 = garantiEnvanteri("g4", q);
+        garantiDetayi(g1, LocalDateTime.of(2026, 1, 10, 0, 0));
+        garantiDetayi(g2, LocalDateTime.of(2026, 6, 30, 0, 0));
+        garantiDetayi(g4, null); // detaylı ama garantisiz
+
+        assertThat(guids(filter().q(q).build())).hasSize(4);
+        assertThat(guids(filter().q(q).garanti(LocalDateTime.of(2026, 1, 1, 0, 0), null).build()))
+            .containsExactlyInAnyOrder(id("g1"), id("g2"));
+        assertThat(guids(filter().q(q).garanti(null, LocalDateTime.of(2026, 3, 1, 23, 59, 59))
+            .build())).containsExactly(id("g1"));
+        assertThat(guids(filter().q(q).garanti(LocalDateTime.of(2026, 1, 1, 0, 0),
+            LocalDateTime.of(2026, 3, 1, 23, 59, 59)).build())).containsExactly(id("g1"));
+        // Sınırlar dahil: bitiş tam 2026-06-30T00:00 iken o andaki garanti dahil.
+        assertThat(guids(filter().q(q).garanti(null, LocalDateTime.of(2026, 6, 30, 0, 0))
+            .build())).containsExactlyInAnyOrder(id("g1"), id("g2"));
+        assertThat(guids(filter().q(q).garanti(LocalDateTime.of(2026, 6, 30, 0, 0), null)
+            .build())).containsExactly(id("g2"));
+        assertThat(guids(filter().q(q).garanti(LocalDateTime.of(2026, 1, 10, 0, 0),
+            LocalDateTime.of(2026, 1, 10, 0, 0)).build())).containsExactly(id("g1"));
+        // Başlangıç bitişten sonra: hata değil, boş sonuç.
+        assertThat(guids(filter().q(q).garanti(LocalDateTime.of(2026, 7, 1, 0, 0),
+            LocalDateTime.of(2026, 1, 1, 0, 0)).build())).isEmpty();
+        // Garanti süzgeci firma süzgeciyle aynı detay join'ini paylaşır.
+        assertThat(guids(filter().q(s).firma(firma.getGuid())
+            .garanti(LocalDateTime.of(2000, 1, 1, 0, 0), null).build())).isEmpty();
+    }
+
+    private Envanter garantiEnvanteri(String ad, String q) {
+        Envanter e = new Envanter();
+        e.setGuid(id(ad));
+        e.setEnvanterAdi(q + " " + ad);
+        e.setEnvanterTuru(EnvanterTuru.DEMIRBAS);
+        return envanterRepository.saveAndFlush(e);
+    }
+
+    private void garantiDetayi(Envanter envanter, LocalDateTime bitis) {
+        EnvanterDetay d = new EnvanterDetay();
+        d.setGuid("filtre-detay-" + envanter.getGuid());
+        d.setEnvanter(envanter);
+        d.setGarantiBitisTarihi(bitis);
+        detayRepository.saveAndFlush(d);
+    }
+
     private List<String> guids(EnvanterFilter filter) {
         return envanterService.search(filter, PageRequest.of(0, 200)).content().stream()
             .map(EnvanterResponse::guid).toList();
@@ -194,6 +244,8 @@ class EnvanterFiltreIntegrationTest {
         List<String> firma;
         List<EnvanterTuru> tur;
         String q;
+        LocalDateTime garantiBas;
+        LocalDateTime garantiBit;
 
         Builder kategori(String... v) { kategori = Arrays.asList(v); return this; }
         Builder marka(String... v) { marka = Arrays.asList(v); return this; }
@@ -202,10 +254,15 @@ class EnvanterFiltreIntegrationTest {
         Builder firma(String... v) { firma = Arrays.asList(v); return this; }
         Builder tur(EnvanterTuru... v) { tur = Arrays.asList(v); return this; }
         Builder q(String v) { q = v; return this; }
+        Builder garanti(LocalDateTime bas, LocalDateTime bit) {
+            garantiBas = bas;
+            garantiBit = bit;
+            return this;
+        }
 
         EnvanterFilter build() {
             return new EnvanterFilter(kategori, marka, model, depo, firma, tur,
-                null, null, null, q);
+                null, null, null, q, garantiBas, garantiBit);
         }
     }
 

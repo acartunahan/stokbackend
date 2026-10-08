@@ -1,11 +1,13 @@
 package com.stoktakip.dto;
 
 import com.stoktakip.enums.EnvanterTuru;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * Envanter listesi süzgeci. Liste alanları birden çok değer alır (alan içinde VEYA,
- * alanlar arasında VE); null ya da boş liste süzgeç uygulamaz.
+ * alanlar arasında VE); null ya da boş liste süzgeç uygulamaz. Garanti bitiş aralığı
+ * sınırlar dahildir; biri verilince detayı ya da garanti bitişi olmayan envanter elenir.
  */
 public record EnvanterFilter(
     List<String> kategoriGuid,
@@ -17,7 +19,9 @@ public record EnvanterFilter(
     String seriNo,
     Long demirbasNumarasi,
     String barkod,
-    String q
+    String q,
+    LocalDateTime garantiBitisBaslangic,
+    LocalDateTime garantiBitisBitis
 ) {
     public EnvanterFilter {
         kategoriGuid = FilterValues.texts("kategoriGuid", kategoriGuid);
@@ -31,10 +35,11 @@ public record EnvanterFilter(
     /** Verilen filtreyi (boş olabilir) koruyup depo koşulunu ekler. */
     public static EnvanterFilter depoIle(EnvanterFilter filter, String depoGuid) {
         if (filter == null) {
-            return new EnvanterFilter(null, null, null, List.of(depoGuid), null, null, null, null, null, null);
+            return new EnvanterFilter(null, null, null, List.of(depoGuid), null, null, null, null, null, null,
+                null, null);
         }
         return new EnvanterFilter(filter.kategoriGuid(), filter.markaGuid(), filter.modelGuid(), List.of(depoGuid),
             filter.firmaGuid(), filter.envanterTuru(), filter.seriNo(), filter.demirbasNumarasi(),
-            filter.barkod(), filter.q());
+            filter.barkod(), filter.q(), filter.garantiBitisBaslangic(), filter.garantiBitisBitis());
     }
 }

@@ -49,20 +49,23 @@ class BusinessEndpointsIntegrationTest {
 
         EnvanterFilter filter = new EnvanterFilter(
             null, null, null, List.of(depo.getGuid()), null, List.of(EnvanterTuru.DEMIRBAS),
-            null, null, null, "Cihaz");
+            null, null, null, "Cihaz", null, null);
         assertThat(envanterService.search(new EnvanterFilter(
-            null, null, null, null, null, null, null, null, null, null),
+            null, null, null, null, null, null, null, null, null, null, null, null),
             PageRequest.of(0, 100)).content()).extracting(item -> item.guid())
             .contains("filter-1-" + suffix, "filter-2-" + suffix, "filter-3-" + suffix);
         assertThat(envanterService.search(new EnvanterFilter(
-            null, null, null, List.of(depo.getGuid()), null, null, null, null, null, null),
+            null, null, null, List.of(depo.getGuid()), null, null, null, null, null, null,
+            null, null),
             PageRequest.of(0, 100)).totalElements()).isEqualTo(3);
         assertThat(envanterService.search(new EnvanterFilter(
             null, null, null, List.of(depo.getGuid()), null, List.of(EnvanterTuru.DEMIRBAS),
-            null, null, null, null), PageRequest.of(0, 100)).totalElements()).isEqualTo(3);
+            null, null, null, null, null, null), PageRequest.of(0, 100)).totalElements())
+            .isEqualTo(3);
         assertThat(envanterService.search(new EnvanterFilter(
             null, null, null, List.of(depo.getGuid()), null, null,
-            null, null, null, "Cihaz"), PageRequest.of(0, 100)).totalElements()).isEqualTo(3);
+            null, null, null, "Cihaz", null, null), PageRequest.of(0, 100)).totalElements())
+            .isEqualTo(3);
         var firstPage = envanterService.search(filter,
             PageRequest.of(0, 2, Sort.by("demirbasNumarasi").ascending()));
         var secondPage = envanterService.search(filter,

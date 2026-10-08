@@ -100,7 +100,7 @@ class SorguSayisiTest {
             }
             final String eg = envGuid;
             count("envanter.getAll", () -> envanterService.getAll());
-            count("envanter.search", () -> envanterService.search(new EnvanterFilter(null, null, null, List.of(depo.getGuid()), null, null, null, null, null, null), PageRequest.of(0, 50)));
+            count("envanter.search", () -> envanterService.search(new EnvanterFilter(null, null, null, List.of(depo.getGuid()), null, null, null, null, null, null, null, null), PageRequest.of(0, 50)));
             count("envanter.getDemirbaslar", () -> envanterService.getDemirbaslar());
             count("envanter.getByDepo", () -> envanterService.getByDepo(depo.getGuid(), null, PageRequest.of(0, 50)));
             count("model.getAll", () -> modelService.getAll());

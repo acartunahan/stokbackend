@@ -7,13 +7,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.stoktakip.entity.Depo;
 import com.stoktakip.entity.Envanter;
+import com.stoktakip.entity.EnvanterDetay;
 import com.stoktakip.entity.Marka;
 import com.stoktakip.entity.Model;
 import com.stoktakip.enums.EnvanterTuru;
 import com.stoktakip.repository.DepoRepository;
+import com.stoktakip.repository.EnvanterDetayRepository;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.MarkaRepository;
 import com.stoktakip.repository.ModelRepository;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,6 +40,7 @@ class FiltreParametreBaglamaTest {
 
     @Autowired WebApplicationContext context;
     @Autowired EnvanterRepository envanterRepository;
+    @Autowired EnvanterDetayRepository detayRepository;
     @Autowired DepoRepository depoRepository;
     @Autowired MarkaRepository markaRepository;
     @Autowired ModelRepository modelRepository;
@@ -62,7 +66,12 @@ class FiltreParametreBaglamaTest {
         Depo d2 = depo("2");
         depo1 = d1.getGuid();
         depo2 = d2.getGuid();
-        envanter("e1", modelA, EnvanterTuru.DEMIRBAS, d1);
+        Envanter e1 = envanter("e1", modelA, EnvanterTuru.DEMIRBAS, d1);
+        EnvanterDetay detay = new EnvanterDetay();
+        detay.setGuid("baglama-detay-" + s);
+        detay.setEnvanter(e1);
+        detay.setGarantiBitisTarihi(LocalDateTime.of(2026, 5, 1, 0, 0));
+        detayRepository.saveAndFlush(detay);
         envanter("e2", modelA, EnvanterTuru.SARF, d2);
         envanter("e3", modelB, EnvanterTuru.DEMIRBAS, d1);
     }
@@ -143,6 +152,28 @@ class FiltreParametreBaglamaTest {
                 .param("envanterTuru", "SARF,YOK"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("envanterTuru: geçersiz değer"));
+    }
+
+    @Test
+    void garantiAraligiIsoTarihSaatIleBaglanir() throws Exception {
+        mvc.perform(get("/api/envanterler").param("q", s)
+                .param("garantiBitisBaslangic", "2026-01-01T00:00:00")
+                .param("garantiBitisBitis", "2026-05-01T00:00:00"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].guid").value(id("e1")));
+        mvc.perform(get("/api/depolar/{guid}/envanterler", depo1)
+                .param("garantiBitisBaslangic", "2026-01-01T00:00:00"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1));
+        // Yalnız tarih (saat yok) ISO DATE_TIME değildir.
+        mvc.perform(get("/api/envanterler").param("garantiBitisBaslangic", "2026-01-01"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("garantiBitisBaslangic: geçersiz değer"));
+        mvc.perform(get("/api/depolar/{guid}/envanterler", depo1)
+                .param("garantiBitisBitis", "2026-13-40T00:00:00"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("garantiBitisBitis: geçersiz değer"));
     }
 
     private String id(String ad) {

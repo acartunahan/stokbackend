@@ -38,6 +38,14 @@ public final class EnvanterSpecifications {
             in(predicates, () -> joins.detay().join("firma", JoinType.LEFT).get("guid"),
                 filter.firmaGuid());
             in(predicates, () -> root.get("envanterTuru"), filter.envanterTuru());
+            if (filter.garantiBitisBaslangic() != null) {
+                predicates.add(builder.greaterThanOrEqualTo(
+                    joins.detay().get("garantiBitisTarihi"), filter.garantiBitisBaslangic()));
+            }
+            if (filter.garantiBitisBitis() != null) {
+                predicates.add(builder.lessThanOrEqualTo(
+                    joins.detay().get("garantiBitisTarihi"), filter.garantiBitisBitis()));
+            }
             equalIgnoreCase(builder, predicates, root.get("seriNo"), filter.seriNo());
             equalIgnoreCase(builder, predicates, root.get("barkod"), filter.barkod());
             if (filter.demirbasNumarasi() != null) {

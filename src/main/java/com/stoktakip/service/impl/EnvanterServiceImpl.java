@@ -111,7 +111,7 @@ public class EnvanterServiceImpl implements EnvanterService {
                 "seriNo, demirbasNumarasi veya barkod alanlarından tam olarak biri gönderilmelidir");
         }
         EnvanterFilter filter = new EnvanterFilter(
-            null, null, null, null, null, null, seriNo, demirbasNumarasi, barkod, null);
+            null, null, null, null, null, null, seriNo, demirbasNumarasi, barkod, null, null, null);
         Page<Envanter> matches = repository.findAll(
             EnvanterSpecifications.filtered(filter),
             PageRequest.of(0, 2));
