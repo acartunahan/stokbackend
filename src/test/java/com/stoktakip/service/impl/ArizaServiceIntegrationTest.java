@@ -244,18 +244,21 @@ class ArizaServiceIntegrationTest {
         assertThat(searchText(an, "  kartı  ")).isEqualTo(2);
     }
 
+    /*
+     * H2 SINIRI: bu test JVM toLowerCase() kullanan eski kodu YAKALAMAZ. H2'nin LOWER'ı da JVM
+     * varsayılan yerelini kullanır (ölçüldü), iki taraf hep aynı çevrilir; mutasyonda 18/18
+     * yeşil kaldı. Oracle LOWER'ı NLS'e bağlıdır; "iki taraf da veritabanında küçültülür"
+     * güvencesi Oracle için yalnız kod okumasına dayanır (ArizaSpecifications). Test yalnız
+     * tr yerelinde yazılan metnin aynısının bulunduğunu sabitler.
+     */
     @Test
-    void aramaJvmYerelindenBagimsizKucukHarfeCevrilir() {
+    void trYerelindeYazilanMetninAynisiBulunur() {
         LocalDateTime an = LocalDateTime.of(2005, 5, 5, 5, 5);
         String k = java.util.UUID.randomUUID().toString().substring(0, 8);
         fault(inventory("yerel-1-" + k), an, "Işık yanmıyor");
         fault(inventory("yerel-2-" + k), an, "KIRIK EKRAN");
         java.util.Locale onceki = java.util.Locale.getDefault();
         try {
-            // Türkçe yerelde "I".toLowerCase() "ı" verir. Arama iki tarafı da veritabanı
-            // LOWER'ıyla çevirir; yazılan metnin aynısı her yerelde bulunur. Not: H2'nin
-            // LOWER'ı JVM yerelini kullanır (ölçüldü), Oracle'ınki NLS ayarını; eski
-            // JVM toLowerCase() sürümüyle farkı yalnız Oracle'da ortaya çıkar.
             java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
             assertThat(searchText(an, "Işık yanmıyor")).isEqualTo(1);
             assertThat(searchText(an, "KIRIK")).isEqualTo(1);
