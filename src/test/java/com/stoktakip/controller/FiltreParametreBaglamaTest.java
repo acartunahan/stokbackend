@@ -213,6 +213,25 @@ class FiltreParametreBaglamaTest {
             .andExpect(jsonPath("$.message").value("durumTipi: geçersiz değer"));
     }
 
+    @Test
+    void garantiParametresindeOfsetEkiYokSayilir() throws Exception {
+        // Belgelenmiş sözleşme: LocalDateTime yerel duvar saatidir; ofset eki dönüştürülmeden
+        // atılır. e1'in garantisi 2026-05-01T00:00. Ofset UTC'ye ya da +03:00'e çevrilseydi
+        // "+05:00" bitişi 04-30'a, "-05:00" başlangıcı 05-01 05:00 sonrasına kayar ve e1 düşerdi.
+        mvc.perform(get("/api/envanterler").param("q", s)
+                .param("garantiBitisBitis", "2026-05-01T00:00:00+05:00"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/api/envanterler").param("q", s)
+                .param("garantiBitisBaslangic", "2026-05-01T00:00:00-05:00"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/api/envanterler").param("q", s)
+                .param("garantiBitisBitis", "2026-05-01T00:00:00Z"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
     private String id(String ad) {
         return "baglama-" + ad + "-" + s;
     }
