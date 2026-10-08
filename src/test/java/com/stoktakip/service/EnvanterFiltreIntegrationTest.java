@@ -206,6 +206,14 @@ class EnvanterFiltreIntegrationTest {
             .garanti(LocalDateTime.of(2000, 1, 1, 0, 0), null).build())).isEmpty();
     }
 
+    @Test
+    void aramaMetnindekiJokerlerDuzKarakterSayilir() {
+        garantiEnvanteri("j1", "50%_indirim-" + s);
+        garantiEnvanteri("j2", "50xyindirim-" + s);
+        assertThat(guids(filter().q("%_indirim-" + s).build())).containsExactly(id("j1"));
+        assertThat(guids(filter().q("indirim-" + s).build())).hasSize(2);
+    }
+
     private Envanter garantiEnvanteri(String ad, String q) {
         Envanter e = new Envanter();
         e.setGuid(id(ad));

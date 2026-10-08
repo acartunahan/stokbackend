@@ -224,6 +224,55 @@ class ArizaServiceIntegrationTest {
             .isEqualTo(1);
     }
 
+    @Test
+    void aramadaYuzdeAltCizgiVeTersBoluDuzMetinSayilir() {
+        LocalDateTime an = LocalDateTime.of(2004, 4, 4, 4, 4);
+        String k = java.util.UUID.randomUUID().toString().substring(0, 8);
+        fault(inventory("kacis-1-" + k), an, "%100 arıza");
+        fault(inventory("kacis-2-" + k), an, "A_B kartı");
+        fault(inventory("kacis-3-" + k), an, "AB kartı");
+        fault(inventory("kacis-4-" + k), an, "C:\\yol bozuk");
+        fault(inventory("kacis-5-" + k), an, "Işık yanmıyor");
+
+        assertThat(searchText(an, "%100")).isEqualTo(1);
+        assertThat(searchText(an, "%")).isEqualTo(1);
+        assertThat(searchText(an, "A_B")).isEqualTo(1);
+        assertThat(searchText(an, "_")).isEqualTo(1);
+        assertThat(searchText(an, "\\")).isEqualTo(1);
+        assertThat(searchText(an, "ab kart")).isEqualTo(1);
+        assertThat(searchText(an, "kartı")).isEqualTo(2);
+        assertThat(searchText(an, "  kartı  ")).isEqualTo(2);
+    }
+
+    @Test
+    void aramaJvmYerelindenBagimsizKucukHarfeCevrilir() {
+        LocalDateTime an = LocalDateTime.of(2005, 5, 5, 5, 5);
+        String k = java.util.UUID.randomUUID().toString().substring(0, 8);
+        fault(inventory("yerel-1-" + k), an, "Işık yanmıyor");
+        fault(inventory("yerel-2-" + k), an, "KIRIK EKRAN");
+        java.util.Locale onceki = java.util.Locale.getDefault();
+        try {
+            // Türkçe yerelde "I".toLowerCase() "ı" verir. Arama iki tarafı da veritabanı
+            // LOWER'ıyla çevirir; yazılan metnin aynısı her yerelde bulunur. Not: H2'nin
+            // LOWER'ı JVM yerelini kullanır (ölçüldü), Oracle'ınki NLS ayarını; eski
+            // JVM toLowerCase() sürümüyle farkı yalnız Oracle'da ortaya çıkar.
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            assertThat(searchText(an, "Işık yanmıyor")).isEqualTo(1);
+            assertThat(searchText(an, "KIRIK")).isEqualTo(1);
+        } finally {
+            java.util.Locale.setDefault(onceki);
+        }
+    }
+
+    private void fault(Envanter e, LocalDateTime an, String aciklama) {
+        service.create(e.getGuid(), new ArizaCreateRequest(an, aciklama, null, null));
+    }
+
+    private long searchText(LocalDateTime an, String q) {
+        return service.search(new ArizaFilter(null, null, null, an, an, q),
+            PageRequest.of(0, 50)).totalElements();
+    }
+
     private long search(LocalDateTime an, List<ArizaDurumTipi> durumlar, Boolean kapandiMi) {
         return service.search(new ArizaFilter(null, durumlar, kapandiMi, an, an, null),
             PageRequest.of(0, 50)).totalElements();

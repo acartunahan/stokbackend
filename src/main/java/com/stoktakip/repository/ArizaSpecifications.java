@@ -23,11 +23,13 @@ public final class ArizaSpecifications {
             if (filter.baslangicTarihi() != null) predicates.add(cb.greaterThanOrEqualTo(root.get("arizaTarihi"), filter.baslangicTarihi()));
             if (filter.bitisTarihi() != null) predicates.add(cb.lessThanOrEqualTo(root.get("arizaTarihi"), filter.bitisTarihi()));
             if (hasText(filter.q())) {
-                String q = "%" + filter.q().trim().toLowerCase() + "%";
+                // Küçük harf dönüşümü iki tarafta da veritabanında: JVM yereline bağlı değil.
+                var q = cb.lower(cb.literal(LikePatterns.contains(filter.q())));
+                char escape = LikePatterns.ESCAPE;
                 predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("arizaAciklamasi")), q),
-                    cb.like(cb.lower(root.get("aciklama")), q),
-                    cb.like(cb.lower(root.get("envanter").get("envanterAdi")), q)
+                    cb.like(cb.lower(root.get("arizaAciklamasi")), q, escape),
+                    cb.like(cb.lower(root.get("aciklama")), q, escape),
+                    cb.like(cb.lower(root.get("envanter").get("envanterAdi")), q, escape)
                 ));
             }
             return cb.and(predicates.toArray(Predicate[]::new));

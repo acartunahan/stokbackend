@@ -53,13 +53,13 @@ public final class EnvanterSpecifications {
                     filter.demirbasNumarasi()));
             }
             if (hasText(filter.q())) {
-                var pattern = builder.lower(builder.literal(
-                    "%" + escapeLike(filter.q().trim()) + "%"));
+                var pattern = builder.lower(builder.literal(LikePatterns.contains(filter.q())));
+                char escape = LikePatterns.ESCAPE;
                 predicates.add(builder.or(
-                    builder.like(builder.lower(root.get("envanterAdi")), pattern, '\\'),
-                    builder.like(builder.lower(root.get("seriNo")), pattern, '\\'),
-                    builder.like(builder.lower(root.get("barkod")), pattern, '\\'),
-                    builder.like(builder.lower(root.get("aciklama")), pattern, '\\')
+                    builder.like(builder.lower(root.get("envanterAdi")), pattern, escape),
+                    builder.like(builder.lower(root.get("seriNo")), pattern, escape),
+                    builder.like(builder.lower(root.get("barkod")), pattern, escape),
+                    builder.like(builder.lower(root.get("aciklama")), pattern, escape)
                 ));
             }
             query.distinct(true);
@@ -115,9 +115,5 @@ public final class EnvanterSpecifications {
 
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
-    }
-
-    private static String escapeLike(String value) {
-        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }
