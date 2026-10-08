@@ -73,16 +73,17 @@ public class DepoController {
     })
     public PageResponse<EnvanterResponse> getEnvanterler(
         @Parameter(description = "Envanterleri listelenecek deponun benzersiz GUID değeri") @PathVariable String guid,
-        @Parameter(description = "Kategori GUID değerine göre filtre") @RequestParam(required = false) String kategoriGuid,
-        @Parameter(description = "Marka GUID değerine göre filtre") @RequestParam(required = false) String markaGuid,
-        @Parameter(description = "Model GUID değerine göre filtre") @RequestParam(required = false) String modelGuid,
-        @RequestParam(required = false) EnvanterTuru envanterTuru,
+        @Parameter(description = "Kategori GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> kategoriGuid,
+        @Parameter(description = "Marka GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> markaGuid,
+        @Parameter(description = "Model GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> modelGuid,
+        @Parameter(description = "Envanter türüne göre filtre; virgülle birden çok değer") @RequestParam(required = false) List<EnvanterTuru> envanterTuru,
         @Parameter(description = "Seri numarasına göre kesin filtre") @RequestParam(required = false) String seriNo,
         @Parameter(description = "Envanter adı, seri no, barkod veya açıklamada aranacak metin") @RequestParam(required = false) String q,
         @PageableDefault(size = 20) Pageable pageable
     ) {
+        // Depo yol değişkeninden gelir; serviste tek değere zorlanır.
         EnvanterFilter filter = new EnvanterFilter(
-            kategoriGuid, markaGuid, modelGuid, guid, null, envanterTuru,
+            kategoriGuid, markaGuid, modelGuid, null, null, envanterTuru,
             seriNo, null, null, q);
         return envanterService.getByDepo(guid, filter, pageable);
     }

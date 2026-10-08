@@ -49,12 +49,12 @@ public class EnvanterController {
     @Operation(operationId = "listInventories", summary = "Envanterleri Listele",
         description = "Aktif envanter kayıtlarını filtreleme, sayfalama ve sıralama seçenekleriyle listeler.")
     public PageResponse<EnvanterResponse> getAll(
-        @Parameter(description = "Kategori GUID değerine göre filtre") @RequestParam(required = false) String kategoriGuid,
-        @Parameter(description = "Marka GUID değerine göre filtre") @RequestParam(required = false) String markaGuid,
-        @Parameter(description = "Model GUID değerine göre filtre") @RequestParam(required = false) String modelGuid,
-        @Parameter(description = "Depo GUID değerine göre filtre") @RequestParam(required = false) String depoGuid,
-        @Parameter(description = "Firma GUID değerine göre filtre") @RequestParam(required = false) String firmaGuid,
-        @RequestParam(required = false) EnvanterTuru envanterTuru,
+        @Parameter(description = "Kategori GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> kategoriGuid,
+        @Parameter(description = "Marka GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> markaGuid,
+        @Parameter(description = "Model GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> modelGuid,
+        @Parameter(description = "Depo GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> depoGuid,
+        @Parameter(description = "Firma GUID değerine göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer (en çok 100)") @RequestParam(required = false) List<String> firmaGuid,
+        @Parameter(description = "Envanter türüne göre filtre; virgülle birden çok değer") @RequestParam(required = false) List<EnvanterTuru> envanterTuru,
         @Parameter(description = "Seri numarasına göre kesin filtre") @RequestParam(required = false) String seriNo,
         @Parameter(description = "Demirbaş numarasına göre kesin filtre") @RequestParam(required = false) Long demirbasNumarasi,
         @Parameter(description = "Barkod değerine göre kesin filtre") @RequestParam(required = false) String barkod,

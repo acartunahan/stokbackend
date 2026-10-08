@@ -2,9 +2,18 @@ package com.stoktakip.repository;
 
 import com.stoktakip.dto.EnvanterFilter;
 import com.stoktakip.entity.Envanter;
+import com.stoktakip.entity.EnvanterDetay;
+import com.stoktakip.entity.Model;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 import org.springframework.data.jpa.domain.Specification;
 
 public final class EnvanterSpecifications {
@@ -13,24 +22,22 @@ public final class EnvanterSpecifications {
 
     public static Specification<Envanter> filtered(EnvanterFilter filter) {
         return (root, query, builder) -> {
-            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            List<Predicate> predicates = new ArrayList<>();
             predicates.add(builder.isFalse(root.get("silindi")));
             if (filter == null) {
-                return builder.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+                return builder.and(predicates.toArray(Predicate[]::new));
             }
-            equalGuid(builder, predicates, root.join("model", JoinType.LEFT)
-                .join("kategori", JoinType.LEFT).get("guid"), filter.kategoriGuid());
-            equalGuid(builder, predicates, root.join("model", JoinType.LEFT)
-                .join("marka", JoinType.LEFT).get("guid"), filter.markaGuid());
-            equalGuid(builder, predicates, root.join("model", JoinType.LEFT).get("guid"),
-                filter.modelGuid());
-            equalGuid(builder, predicates, root.join("depo", JoinType.LEFT).get("guid"),
+            Joins joins = new Joins(root);
+            in(predicates, () -> joins.model().join("kategori", JoinType.LEFT).get("guid"),
+                filter.kategoriGuid());
+            in(predicates, () -> joins.model().join("marka", JoinType.LEFT).get("guid"),
+                filter.markaGuid());
+            in(predicates, () -> joins.model().get("guid"), filter.modelGuid());
+            in(predicates, () -> root.join("depo", JoinType.LEFT).get("guid"),
                 filter.depoGuid());
-            equalGuid(builder, predicates, root.join("detay", JoinType.LEFT)
-                .join("firma", JoinType.LEFT).get("guid"), filter.firmaGuid());
-            if (filter.envanterTuru() != null) {
-                predicates.add(builder.equal(root.get("envanterTuru"), filter.envanterTuru()));
-            }
+            in(predicates, () -> joins.detay().join("firma", JoinType.LEFT).get("guid"),
+                filter.firmaGuid());
+            in(predicates, () -> root.get("envanterTuru"), filter.envanterTuru());
             equalIgnoreCase(builder, predicates, root.get("seriNo"), filter.seriNo());
             equalIgnoreCase(builder, predicates, root.get("barkod"), filter.barkod());
             if (filter.demirbasNumarasi() != null) {
@@ -48,25 +55,48 @@ public final class EnvanterSpecifications {
                 ));
             }
             query.distinct(true);
-            return builder.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+            return builder.and(predicates.toArray(Predicate[]::new));
         };
     }
 
-    private static void equalGuid(
-        jakarta.persistence.criteria.CriteriaBuilder builder,
-        List<jakarta.persistence.criteria.Predicate> predicates,
-        jakarta.persistence.criteria.Path<String> path,
-        String value
+    /** İlişki join'lerini yalnız gerektiğinde, bir kez kurar ve yeniden kullanır. */
+    private static final class Joins {
+        private final Root<Envanter> root;
+        private Join<Envanter, Model> model;
+        private Join<Envanter, EnvanterDetay> detay;
+
+        private Joins(Root<Envanter> root) {
+            this.root = root;
+        }
+
+        Join<Envanter, Model> model() {
+            if (model == null) {
+                model = root.join("model", JoinType.LEFT);
+            }
+            return model;
+        }
+
+        Join<Envanter, EnvanterDetay> detay() {
+            if (detay == null) {
+                detay = root.join("detay", JoinType.LEFT);
+            }
+            return detay;
+        }
+    }
+
+    /** Değerler {@link EnvanterFilter} kurucusunda normalleştirilir; boş liste = süzgeç yok. */
+    private static void in(
+        List<Predicate> predicates, Supplier<Path<?>> path, Collection<?> values
     ) {
-        if (hasText(value)) {
-            predicates.add(builder.equal(path, value.trim()));
+        if (values != null && !values.isEmpty()) {
+            predicates.add(path.get().in(values));
         }
     }
 
     private static void equalIgnoreCase(
-        jakarta.persistence.criteria.CriteriaBuilder builder,
-        List<jakarta.persistence.criteria.Predicate> predicates,
-        jakarta.persistence.criteria.Path<String> path,
+        CriteriaBuilder builder,
+        List<Predicate> predicates,
+        Path<String> path,
         String value
     ) {
         if (hasText(value)) {

@@ -26,6 +26,7 @@ import com.stoktakip.repository.ModelRepository;
 import jakarta.persistence.EntityManagerFactory;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -99,7 +100,7 @@ class SorguSayisiTest {
             }
             final String eg = envGuid;
             count("envanter.getAll", () -> envanterService.getAll());
-            count("envanter.search", () -> envanterService.search(new EnvanterFilter(null, null, null, depo.getGuid(), null, null, null, null, null, null), PageRequest.of(0, 50)));
+            count("envanter.search", () -> envanterService.search(new EnvanterFilter(null, null, null, List.of(depo.getGuid()), null, null, null, null, null, null), PageRequest.of(0, 50)));
             count("envanter.getDemirbaslar", () -> envanterService.getDemirbaslar());
             count("envanter.getByDepo", () -> envanterService.getByDepo(depo.getGuid(), null, PageRequest.of(0, 50)));
             count("model.getAll", () -> modelService.getAll());
