@@ -26,6 +26,7 @@ import com.stoktakip.repository.PersonelZimmetHareketRepository;
 import com.stoktakip.service.ArizaService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -197,6 +198,42 @@ class ArizaServiceIntegrationTest {
         var page = service.search(new ArizaFilter(null, null, null, null, null, null), PageRequest.of(0, 20));
         assertThat(page.content()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(4);
+    }
+
+    @Test
+    void sonDurumBirdenCokDegerleSuzulur() {
+        // Yalnız bu testin arızalarını kapsayan dar tarih penceresi.
+        LocalDateTime an = LocalDateTime.of(2003, 3, 3, 3, 3);
+        String k = java.util.UUID.randomUUID().toString().substring(0, 8);
+        create(inventory("durum-1-" + k), an);
+        var tamirde = create(inventory("durum-2-" + k), an);
+        var kapali = create(inventory("durum-3-" + k), an);
+        setStatus(tamirde.guid(), ArizaDurumTipi.TAMIRDE, false);
+        setStatus(kapali.guid(), ArizaDurumTipi.KAPATILDI, true);
+
+        assertThat(search(an, List.of(ArizaDurumTipi.TAMIRDE), null)).isEqualTo(1);
+        assertThat(search(an, List.of(ArizaDurumTipi.ARIZA_BILDIRILDI, ArizaDurumTipi.TAMIRDE),
+            null)).isEqualTo(2);
+        assertThat(search(an, List.of(), null)).isEqualTo(3);
+        assertThat(search(an, null, null)).isEqualTo(3);
+        assertThat(search(an, java.util.Arrays.asList(ArizaDurumTipi.TAMIRDE, null,
+            ArizaDurumTipi.TAMIRDE), null)).isEqualTo(1);
+        // Alanlar arası VE: tamirdeki arıza kapalı değildir.
+        assertThat(search(an, List.of(ArizaDurumTipi.TAMIRDE), true)).isZero();
+        assertThat(search(an, List.of(ArizaDurumTipi.KAPATILDI, ArizaDurumTipi.TAMIRDE), true))
+            .isEqualTo(1);
+    }
+
+    private long search(LocalDateTime an, List<ArizaDurumTipi> durumlar, Boolean kapandiMi) {
+        return service.search(new ArizaFilter(null, durumlar, kapandiMi, an, an, null),
+            PageRequest.of(0, 50)).totalElements();
+    }
+
+    private void setStatus(String arizaGuid, ArizaDurumTipi durum, boolean kapandi) {
+        var ariza = arizaRepository.findById(arizaGuid).orElseThrow();
+        ariza.setSonDurum(durum);
+        ariza.setKapandiMi(kapandi);
+        arizaRepository.saveAndFlush(ariza);
     }
 
     private Envanter inventory(String suffix) {

@@ -42,7 +42,8 @@ public class ArizaController {
         description = "Arızaları envanter, son durum, açık/kapalı bilgisi, tarih ve metin ölçütleriyle sayfalı listeler.")
     public PageResponse<ArizaResponse> list(
         @RequestParam(required = false) String envanterGuid,
-        @RequestParam(required = false) ArizaDurumTipi durumTipi,
+        @Parameter(description = "Son duruma göre filtre; virgülle ya da tekrarlı parametreyle birden çok değer")
+        @RequestParam(required = false) List<ArizaDurumTipi> durumTipi,
         @RequestParam(required = false) Boolean kapandiMi,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime baslangicTarihi,

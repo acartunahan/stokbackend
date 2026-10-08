@@ -5,17 +5,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.stoktakip.dto.ArizaCreateRequest;
 import com.stoktakip.entity.Depo;
 import com.stoktakip.entity.Envanter;
 import com.stoktakip.entity.EnvanterDetay;
 import com.stoktakip.entity.Marka;
 import com.stoktakip.entity.Model;
+import com.stoktakip.enums.ArizaDurumTipi;
 import com.stoktakip.enums.EnvanterTuru;
+import com.stoktakip.repository.ArizaRepository;
 import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.EnvanterDetayRepository;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.MarkaRepository;
 import com.stoktakip.repository.ModelRepository;
+import com.stoktakip.service.ArizaService;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +48,8 @@ class FiltreParametreBaglamaTest {
     @Autowired DepoRepository depoRepository;
     @Autowired MarkaRepository markaRepository;
     @Autowired ModelRepository modelRepository;
+    @Autowired ArizaService arizaService;
+    @Autowired ArizaRepository arizaRepository;
 
     MockMvc mvc;
     String s;
@@ -174,6 +180,37 @@ class FiltreParametreBaglamaTest {
                 .param("garantiBitisBitis", "2026-13-40T00:00:00"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("garantiBitisBitis: geçersiz değer"));
+    }
+
+    @Test
+    void arizaDurumTipiVirgulleBaglanirGecersizUye400() throws Exception {
+        var tamirde = arizaService.create(id("e1"), new ArizaCreateRequest(
+            LocalDateTime.of(2026, 1, 5, 10, 0), "Arıza " + s, null, null));
+        arizaService.create(id("e3"), new ArizaCreateRequest(
+            LocalDateTime.of(2026, 1, 6, 10, 0), "Arıza " + s, null, null));
+        var ariza = arizaRepository.findById(tamirde.guid()).orElseThrow();
+        ariza.setSonDurum(ArizaDurumTipi.TAMIRDE);
+        arizaRepository.saveAndFlush(ariza);
+
+        // Yalnız bu testin iki arızasını kapsayan tarih penceresi.
+        String bas = "2026-01-05T00:00:00";
+        String bit = "2026-01-06T23:59:59";
+        mvc.perform(get("/api/arizalar").param("baslangicTarihi", bas).param("bitisTarihi", bit)
+                .param("durumTipi", "TAMIRDE,YOLDA"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].guid").value(tamirde.guid()));
+        mvc.perform(get("/api/arizalar").param("baslangicTarihi", bas).param("bitisTarihi", bit)
+                .param("durumTipi", "TAMIRDE", "ARIZA_BILDIRILDI"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(2));
+        mvc.perform(get("/api/arizalar").param("baslangicTarihi", bas).param("bitisTarihi", bit)
+                .param("durumTipi", "TAMIRDE"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/api/arizalar").param("durumTipi", "TAMIRDE,YOK"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("durumTipi: geçersiz değer"));
     }
 
     private String id(String ad) {

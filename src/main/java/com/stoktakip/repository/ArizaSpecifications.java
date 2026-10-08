@@ -18,7 +18,7 @@ public final class ArizaSpecifications {
             if (hasText(filter.envanterGuid())) {
                 predicates.add(cb.equal(root.get("envanter").get("guid"), filter.envanterGuid().trim()));
             }
-            if (filter.durumTipi() != null) predicates.add(cb.equal(root.get("sonDurum"), filter.durumTipi()));
+            if (!filter.durumTipi().isEmpty()) predicates.add(root.get("sonDurum").in(filter.durumTipi()));
             if (filter.kapandiMi() != null) predicates.add(cb.equal(root.get("kapandiMi"), filter.kapandiMi()));
             if (filter.baslangicTarihi() != null) predicates.add(cb.greaterThanOrEqualTo(root.get("arizaTarihi"), filter.baslangicTarihi()));
             if (filter.bitisTarihi() != null) predicates.add(cb.lessThanOrEqualTo(root.get("arizaTarihi"), filter.bitisTarihi()));
