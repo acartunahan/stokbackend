@@ -2,6 +2,7 @@ package com.stoktakip.service.impl;
 
 import com.stoktakip.dto.AparatCreateRequest;
 import com.stoktakip.dto.AparatResponse;
+import com.stoktakip.dto.AparatUpdateRequest;
 import com.stoktakip.entity.Aparat;
 import com.stoktakip.entity.Envanter;
 import com.stoktakip.exception.BusinessRuleException;
@@ -45,6 +46,16 @@ public class AparatServiceImpl implements AparatService {
         Aparat entity = new Aparat();
         entity.setGuid(UUID.randomUUID().toString());
         entity.setEnvanter(envanter);
+        entity.setAparatAdi(request.aparatAdi().trim());
+        entity.setAciklama(request.aciklama());
+        return toResponse(repository.save(entity));
+    }
+
+    @Override
+    @Transactional
+    public AparatResponse update(String guid, AparatUpdateRequest request) {
+        if (request == null) throw new BusinessRuleException("Aparat güncelleme talebi zorunludur");
+        Aparat entity = find(guid);
         entity.setAparatAdi(request.aparatAdi().trim());
         entity.setAciklama(request.aciklama());
         return toResponse(repository.save(entity));

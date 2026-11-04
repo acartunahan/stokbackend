@@ -62,4 +62,38 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
 
     @Query("select count(h) > 0 from DepoZimmetHareket h where h.envanter.guid = :guid and h.silindi = false")
     boolean existsByEnvanterGuid(String guid);
+
+    @Query("""
+        select h.envanter.guid, h.gidecegiDepo.guid, sum(abs(h.adet)) from DepoZimmetHareket h
+        where h.envanter.envanterTuru = com.stoktakip.enums.EnvanterTuru.SARF
+          and upper(h.tur) in :girisTurleri
+          and h.gidecegiDepo is not null
+          and (:depoGuid is null or h.gidecegiDepo.guid = :depoGuid)
+          and (:envanterGuid is null or h.envanter.guid = :envanterGuid)
+          and h.silindi = false
+          and h.envanter.silindi = false
+        group by h.envanter.guid, h.gidecegiDepo.guid
+        """)
+    List<Object[]> sumSarfGiris(
+        @Param("girisTurleri") Collection<String> girisTurleri,
+        @Param("depoGuid") String depoGuid,
+        @Param("envanterGuid") String envanterGuid
+    );
+
+    @Query("""
+        select h.envanter.guid, h.mevcutDepo.guid, sum(abs(h.adet)) from DepoZimmetHareket h
+        where h.envanter.envanterTuru = com.stoktakip.enums.EnvanterTuru.SARF
+          and upper(h.tur) in :cikisTurleri
+          and h.mevcutDepo is not null
+          and (:depoGuid is null or h.mevcutDepo.guid = :depoGuid)
+          and (:envanterGuid is null or h.envanter.guid = :envanterGuid)
+          and h.silindi = false
+          and h.envanter.silindi = false
+        group by h.envanter.guid, h.mevcutDepo.guid
+        """)
+    List<Object[]> sumSarfCikis(
+        @Param("cikisTurleri") Collection<String> cikisTurleri,
+        @Param("depoGuid") String depoGuid,
+        @Param("envanterGuid") String envanterGuid
+    );
 }

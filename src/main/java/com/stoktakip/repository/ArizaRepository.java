@@ -29,4 +29,7 @@ public interface ArizaRepository extends SoftDeleteRepository<Ariza, String>,
         where a.envanter.guid = :envanterGuid and a.kapandiMi = false and a.silindi = false
         """)
     boolean existsOpenByEnvanterGuid(@Param("envanterGuid") String envanterGuid);
+
+    @Query("select count(a) from Ariza a where a.kapandiMi = false and a.silindi = false")
+    long countAcik();
 }

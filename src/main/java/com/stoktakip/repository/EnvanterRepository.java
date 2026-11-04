@@ -37,4 +37,7 @@ public interface EnvanterRepository extends SoftDeleteRepository<Envanter, Strin
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from Envanter e where e.guid = :guid and e.silindi = false")
     Optional<Envanter> findByGuidForUpdate(@Param("guid") String guid);
+
+    @Query("select count(e) from Envanter e where e.envanterTuru = :tur and e.silindi = false")
+    long countAktifByTur(@Param("tur") EnvanterTuru tur);
 }
