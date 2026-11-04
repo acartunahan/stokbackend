@@ -8,6 +8,7 @@ import com.stoktakip.enums.EnvanterTuru;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.FirmaRepository;
+import com.stoktakip.service.Guidler;
 import com.stoktakip.service.FirmaService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -74,7 +75,7 @@ public class FirmaServiceImpl implements FirmaService {
     }
 
     private Firma find(String guid) {
-        String id = id(guid, "firmaGuid");
+        String id = Guidler.zorunlu(guid, "firmaGuid");
         return repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Firma bulunamadı: " + id));
     }
@@ -108,10 +109,5 @@ public class FirmaServiceImpl implements FirmaService {
             firma.getTelefon1(), firma.getTelefon2(), firma.getFaks(), firma.getWebAdresi(),
             firma.getAdres(), firma.getAciklama(), firma.getDurum(), firma.getKaynakAlani(),
             firma.getOlusturmaTarihi());
-    }
-
-    private static String id(String value, String field) {
-        if (value == null || value.isBlank()) throw new BusinessRuleException(field + " zorunludur");
-        return value.trim();
     }
 }

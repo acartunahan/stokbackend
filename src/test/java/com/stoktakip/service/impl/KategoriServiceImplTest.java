@@ -12,7 +12,6 @@ import com.stoktakip.entity.Kategori;
 import com.stoktakip.entity.Model;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.repository.KategoriRepository;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 class KategoriServiceImplTest {
@@ -118,9 +118,9 @@ class KategoriServiceImplTest {
         Kategori root = kategori("root", "Root");
         Kategori child = kategori("child", "Child");
         Kategori grandchild = kategori("grandchild", "Grandchild");
-        child.setAltKategoriler(new ArrayList<>(List.of(grandchild)));
-        root.setAltKategoriler(new ArrayList<>(List.of(child)));
-        when(repository.findByParentIsNull()).thenReturn(List.of(root));
+        child.setParent(root);
+        grandchild.setParent(child);
+        when(repository.findAll(any(Sort.class))).thenReturn(List.of(grandchild, root, child));
 
         var tree = service.getCategoryTree();
 
@@ -132,15 +132,17 @@ class KategoriServiceImplTest {
 
     @Test
     void bozukVerideTreeMappingSonsuzDonguyeGirmez() {
+        Kategori root = kategori("root", "Root");
         Kategori first = kategori("first", "First");
         Kategori second = kategori("second", "Second");
-        first.setAltKategoriler(List.of(second));
-        second.setAltKategoriler(List.of(first));
-        when(repository.findByParentIsNull()).thenReturn(List.of(first));
+        first.setParent(second);
+        second.setParent(first);
+        when(repository.findAll(any(Sort.class))).thenReturn(List.of(root, first, second));
 
-        assertThatThrownBy(service::getCategoryTree)
-            .isInstanceOf(BusinessRuleException.class)
-            .hasMessageContaining("döngü");
+        var tree = service.getCategoryTree();
+
+        assertThat(tree).extracting(item -> item.guid()).containsExactly("root");
+        assertThat(tree.getFirst().altKategoriler()).isEmpty();
     }
 
     private static Kategori kategori(String guid, String baslik) {

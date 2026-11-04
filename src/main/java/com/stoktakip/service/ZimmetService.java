@@ -184,14 +184,7 @@ public class ZimmetService {
         Envanter envanter, ZimmetHareketTipi tip, Depo mevcutDepo, Depo hedefDepo,
         String aciklama, String islemYapanPersonel, String tur
     ) {
-        DepoZimmetHareket hareket = new DepoZimmetHareket();
-        hareket.setEnvanter(envanter);
-        hareket.setHareketTipi(tip);
-        hareket.setZimmetTuru(envanter.getEnvanterTuru().name());
-        hareket.setAdet(1L);
-        hareket.setTur(tur);
-        hareket.setMevcutDepo(mevcutDepo);
-        hareket.setGidecegiDepo(hedefDepo);
+        DepoZimmetHareket hareket = DepoZimmetHareket.yeni(envanter, tip, tur, 1L, mevcutDepo, hedefDepo);
         hareket.setAciklama(aciklama);
         hareket.setIslemYapanPersonel(islemYapanPersonel);
         return hareket;

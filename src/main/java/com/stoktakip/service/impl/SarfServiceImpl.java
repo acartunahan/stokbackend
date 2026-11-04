@@ -15,12 +15,11 @@ import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.DepoZimmetHareketRepository;
 import com.stoktakip.repository.EnvanterRepository;
 import com.stoktakip.repository.SarfLogKaydiRepository;
+import com.stoktakip.service.Guidler;
 import com.stoktakip.service.SarfService;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,37 +85,20 @@ public class SarfServiceImpl implements SarfService {
 
     @Override
     public List<SarfStokResponse> getStok(String depoGuid, String envanterGuid) {
-        String depoId = blankToNull(depoGuid);
-        String envanterId = blankToNull(envanterGuid);
-        Map<List<String>, long[]> toplamlar = new HashMap<>();
+        String depoId = Guidler.bosIseNull(depoGuid);
+        String envanterId = Guidler.bosIseNull(envanterGuid);
+        Map<StokAnahtari, long[]> toplamlar = new LinkedHashMap<>();
         for (Object[] row : hareketRepository.sumSarfGiris(GIRIS_TURLERI, depoId, envanterId)) {
-            toplamlar.computeIfAbsent(anahtar(row), key -> new long[2])[0] += sayi(row[2]);
+            toplamlar.computeIfAbsent(StokAnahtari.from(row), key -> new long[2])[0] += sayi(row[4]);
         }
         for (Object[] row : hareketRepository.sumSarfCikis(CIKIS_TURLERI, depoId, envanterId)) {
-            toplamlar.computeIfAbsent(anahtar(row), key -> new long[2])[1] += sayi(row[2]);
+            toplamlar.computeIfAbsent(StokAnahtari.from(row), key -> new long[2])[1] += sayi(row[4]);
         }
-
-        Set<String> envanterGuidleri = new HashSet<>();
-        Set<String> depoGuidleri = new HashSet<>();
-        toplamlar.keySet().forEach(key -> {
-            envanterGuidleri.add(key.get(0));
-            depoGuidleri.add(key.get(1));
-        });
-        Map<String, Envanter> envanterler = new HashMap<>();
-        envanterRepository.findAllById(envanterGuidleri).forEach(item -> envanterler.put(item.getGuid(), item));
-        Map<String, Depo> depolar = new HashMap<>();
-        depoRepository.findAllById(depoGuidleri).forEach(item -> depolar.put(item.getGuid(), item));
-
-        List<SarfStokResponse> sonuc = new ArrayList<>();
-        toplamlar.forEach((key, toplam) -> {
-            Envanter envanter = envanterler.get(key.get(0));
-            Depo depo = depolar.get(key.get(1));
-            sonuc.add(new SarfStokResponse(key.get(0), envanter == null ? null : envanter.getEnvanterAdi(),
-                key.get(1), depo == null ? null : depo.getAd(), toplam[0], toplam[1], toplam[0] - toplam[1]));
-        });
-        sonuc.sort(Comparator.comparing(SarfStokResponse::depoGuid)
-            .thenComparing(item -> item.envanterAdi() == null ? "" : item.envanterAdi()));
-        return sonuc;
+        return toplamlar.entrySet().stream()
+            .map(entry -> entry.getKey().toResponse(entry.getValue()[0], entry.getValue()[1]))
+            .sorted(Comparator.comparing(SarfStokResponse::depoGuid)
+                .thenComparing(item -> item.envanterAdi() == null ? "" : item.envanterAdi()))
+            .toList();
     }
 
     private long stok(String envanterGuid, String depoGuid) {
@@ -124,12 +106,8 @@ public class SarfServiceImpl implements SarfService {
     }
 
     private DepoZimmetHareket yeniHareket(Envanter envanter, SarfHareketRequest request, String tur) {
-        DepoZimmetHareket hareket = new DepoZimmetHareket();
-        hareket.setEnvanter(envanter);
-        hareket.setHareketTipi(ZimmetHareketTipi.DEPO_TRANSFERI);
-        hareket.setZimmetTuru(EnvanterTuru.SARF.name());
-        hareket.setAdet(request.adet());
-        hareket.setTur(tur);
+        DepoZimmetHareket hareket = DepoZimmetHareket.yeni(
+            envanter, ZimmetHareketTipi.DEPO_TRANSFERI, tur, request.adet(), null, null);
         hareket.setAciklama(request.aciklama());
         hareket.setIslemYapanPersonel(request.personelKodu());
         return hareket;
@@ -150,7 +128,7 @@ public class SarfServiceImpl implements SarfService {
     }
 
     private Envanter sarfEnvanter(String guid) {
-        String id = id(guid, "envanterGuid");
+        String id = Guidler.zorunlu(guid, "envanterGuid");
         Envanter envanter = envanterRepository.findByGuidForUpdate(id)
             .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadı: " + id));
         if (envanter.getEnvanterTuru() != EnvanterTuru.SARF) {
@@ -160,7 +138,7 @@ public class SarfServiceImpl implements SarfService {
     }
 
     private Depo depo(String guid) {
-        String id = id(guid, "depoGuid");
+        String id = Guidler.zorunlu(guid, "depoGuid");
         return depoRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadı: " + id));
     }
@@ -171,20 +149,18 @@ public class SarfServiceImpl implements SarfService {
             kalanStok, hareket.getOlusturmaTarihi());
     }
 
-    private static List<String> anahtar(Object[] row) {
-        return List.of(String.valueOf(row[0]), String.valueOf(row[1]));
+    /** Toplama sorgularının satırları: envanterGuid, envanterAdi, depoGuid, depoAdi, adet. */
+    private record StokAnahtari(String envanterGuid, String envanterAdi, String depoGuid, String depoAdi) {
+        static StokAnahtari from(Object[] row) {
+            return new StokAnahtari((String) row[0], (String) row[1], (String) row[2], (String) row[3]);
+        }
+
+        SarfStokResponse toResponse(long giris, long cikis) {
+            return new SarfStokResponse(envanterGuid, envanterAdi, depoGuid, depoAdi, giris, cikis, giris - cikis);
+        }
     }
 
     private static long sayi(Object value) {
         return value instanceof Number number ? number.longValue() : 0L;
-    }
-
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
-
-    private static String id(String value, String field) {
-        if (value == null || value.isBlank()) throw new BusinessRuleException(field + " zorunludur");
-        return value.trim();
     }
 }

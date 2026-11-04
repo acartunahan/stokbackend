@@ -7,6 +7,7 @@ import com.stoktakip.entity.Depo;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.DepoRepository;
+import com.stoktakip.service.Guidler;
 import com.stoktakip.service.DepoService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -67,7 +68,7 @@ public class DepoServiceImpl implements DepoService {
     }
 
     private Depo find(String guid) {
-        String id = id(guid, "depoGuid");
+        String id = Guidler.zorunlu(guid, "depoGuid");
         return repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadı: " + id));
     }
@@ -83,10 +84,5 @@ public class DepoServiceImpl implements DepoService {
     private DepoResponse toResponse(Depo depo) {
         return new DepoResponse(depo.getGuid(), depo.getAd(), depo.getAciklama(),
             depo.getPersonelKodu(), depo.getDurum(), depo.getOlusturmaTarihi());
-    }
-
-    private static String id(String value, String field) {
-        if (value == null || value.isBlank()) throw new BusinessRuleException(field + " zorunludur");
-        return value.trim();
     }
 }

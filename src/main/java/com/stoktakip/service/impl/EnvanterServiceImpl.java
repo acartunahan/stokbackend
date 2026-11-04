@@ -21,6 +21,7 @@ import com.stoktakip.enums.ZimmetHareketTipi;
 import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.EnvanterRepository;
+import com.stoktakip.repository.EnvanterSpecifications;
 import com.stoktakip.repository.EnvanterDetayRepository;
 import com.stoktakip.repository.DepoRepository;
 import com.stoktakip.repository.DepoZimmetHareketRepository;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -84,7 +86,7 @@ public class EnvanterServiceImpl implements EnvanterService {
         Pageable safePageable = PageableFactory.sanitize(
             pageable, Sort.by("envanterAdi").ascending(), SORT_FIELDS);
         Page<EnvanterResponse> result = repository.findAll(
-            com.stoktakip.repository.EnvanterSpecifications.filtered(filter), safePageable
+            EnvanterSpecifications.filtered(filter), safePageable
         ).map(this::toResponse);
         return PageResponse.from(result);
     }
@@ -96,14 +98,7 @@ public class EnvanterServiceImpl implements EnvanterService {
         String guid = normalizeGuid(depoGuid);
         depoRepository.findById(guid)
             .orElseThrow(() -> new ResourceNotFoundException("Depo bulunamadı: " + guid));
-        EnvanterFilter source = filter == null
-            ? new EnvanterFilter(null, null, null, guid, null, null, null, null, null, null)
-            : filter;
-        EnvanterFilter depotFilter = new EnvanterFilter(
-            source.kategoriGuid(), source.markaGuid(), source.modelGuid(), guid,
-            source.firmaGuid(), source.envanterTuru(), source.seriNo(),
-            source.demirbasNumarasi(), source.barkod(), source.q());
-        return search(depotFilter, pageable);
+        return search(EnvanterFilter.depoIle(filter, guid), pageable);
     }
 
     @Override
@@ -118,8 +113,8 @@ public class EnvanterServiceImpl implements EnvanterService {
         EnvanterFilter filter = new EnvanterFilter(
             null, null, null, null, null, null, seriNo, demirbasNumarasi, barkod, null);
         Page<Envanter> matches = repository.findAll(
-            com.stoktakip.repository.EnvanterSpecifications.filtered(filter),
-            org.springframework.data.domain.PageRequest.of(0, 2));
+            EnvanterSpecifications.filtered(filter),
+            PageRequest.of(0, 2));
         if (matches.getTotalElements() == 0) {
             throw new ResourceNotFoundException("Envanter bulunamadı");
         }
@@ -168,13 +163,8 @@ public class EnvanterServiceImpl implements EnvanterService {
         EnvanterDetay kaydedilenDetay = detayRepository.save(detay);
         kaydedilen.setDetay(kaydedilenDetay);
 
-        DepoZimmetHareket ilkHareket = new DepoZimmetHareket();
-        ilkHareket.setEnvanter(kaydedilen);
-        ilkHareket.setHareketTipi(ZimmetHareketTipi.DEPO_TRANSFERI);
-        ilkHareket.setZimmetTuru(kaydedilen.getEnvanterTuru().name());
-        ilkHareket.setAdet(1L);
-        ilkHareket.setGidecegiDepo(depo);
-        ilkHareket.setTur("GIRIS");
+        DepoZimmetHareket ilkHareket = DepoZimmetHareket.yeni(
+            kaydedilen, ZimmetHareketTipi.DEPO_TRANSFERI, "GIRIS", 1L, null, depo);
         ilkHareket.setAciklama("İlk depo girişi");
         depoHareketRepository.save(ilkHareket);
         return toResponse(kaydedilen);

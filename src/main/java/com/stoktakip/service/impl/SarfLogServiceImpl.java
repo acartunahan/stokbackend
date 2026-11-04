@@ -4,6 +4,7 @@ import com.stoktakip.dto.PageResponse;
 import com.stoktakip.dto.SarfLogResponse;
 import com.stoktakip.entity.SarfLogKaydi;
 import com.stoktakip.repository.SarfLogKaydiRepository;
+import com.stoktakip.service.Guidler;
 import com.stoktakip.service.PageableFactory;
 import com.stoktakip.service.SarfLogService;
 import java.time.LocalDateTime;
@@ -31,8 +32,8 @@ public class SarfLogServiceImpl implements SarfLogService {
         LocalDateTime baslangicTarihi, LocalDateTime bitisTarihi, Pageable pageable
     ) {
         Pageable safe = PageableFactory.sanitize(pageable, DEFAULT_SORT, SORT_FIELDS);
-        return PageResponse.from(repository.search(blankToNull(depoGuid), blankToNull(personelKodu),
-            blankToNull(sarfMalzemeGuid), baslangicTarihi, bitisTarihi, safe).map(this::toResponse));
+        return PageResponse.from(repository.search(Guidler.bosIseNull(depoGuid), Guidler.bosIseNull(personelKodu),
+            Guidler.bosIseNull(sarfMalzemeGuid), baslangicTarihi, bitisTarihi, safe).map(this::toResponse));
     }
 
     private SarfLogResponse toResponse(SarfLogKaydi kayit) {
@@ -40,9 +41,5 @@ public class SarfLogServiceImpl implements SarfLogService {
             kayit.getAciklama(), kayit.getSarfMalzemeGuid(),
             kayit.getDepo() == null ? null : kayit.getDepo().getGuid(),
             kayit.getDepo() == null ? null : kayit.getDepo().getAd(), kayit.getOlusturmaTarihi());
-    }
-
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 }

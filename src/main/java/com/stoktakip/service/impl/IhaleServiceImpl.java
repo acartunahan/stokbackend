@@ -9,6 +9,7 @@ import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.FirmaRepository;
 import com.stoktakip.repository.IhaleRepository;
+import com.stoktakip.service.Guidler;
 import com.stoktakip.service.IhaleService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -79,13 +80,13 @@ public class IhaleServiceImpl implements IhaleService {
     }
 
     private Ihale find(String guid) {
-        String id = id(guid, "ihaleGuid");
+        String id = Guidler.zorunlu(guid, "ihaleGuid");
         return repository.findDetayByGuid(id)
             .orElseThrow(() -> new ResourceNotFoundException("İhale bulunamadı: " + id));
     }
 
     private Firma firma(String guid) {
-        String id = id(guid, "firmaGuid");
+        String id = Guidler.zorunlu(guid, "firmaGuid");
         return firmaRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Firma bulunamadı: " + id));
     }
@@ -121,10 +122,5 @@ public class IhaleServiceImpl implements IhaleService {
             ihale.getKomisyonBaskani(), ihale.getUye1(), ihale.getUye2(),
             ihale.getYerindeGaranti(), ihale.getOnarimSuresi(), ihale.getDurum(),
             ihale.getOlusturmaTarihi());
-    }
-
-    private static String id(String value, String field) {
-        if (value == null || value.isBlank()) throw new BusinessRuleException(field + " zorunludur");
-        return value.trim();
     }
 }

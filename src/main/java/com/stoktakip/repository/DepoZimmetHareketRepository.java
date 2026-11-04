@@ -25,7 +25,7 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
         @Param("enGecTarih") LocalDateTime enGecTarih
     );
 
-    @EntityGraph(attributePaths = {"envanter", "mevcutDepo", "gidecegiDepo"})
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay", "mevcutDepo", "gidecegiDepo"})
     @Query("""
         select h from DepoZimmetHareket h
         where h.envanter.guid = :guid
@@ -41,7 +41,7 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
         Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"envanter", "mevcutDepo", "gidecegiDepo"})
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay", "mevcutDepo", "gidecegiDepo"})
     @Query("""
         select h from DepoZimmetHareket h
         where (h.mevcutDepo.guid = :depoGuid or h.gidecegiDepo.guid = :depoGuid)
@@ -64,7 +64,7 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
     boolean existsByEnvanterGuid(String guid);
 
     @Query("""
-        select h.envanter.guid, h.gidecegiDepo.guid, sum(abs(h.adet)) from DepoZimmetHareket h
+        select h.envanter.guid, h.envanter.envanterAdi, h.gidecegiDepo.guid, h.gidecegiDepo.ad, sum(abs(h.adet)) from DepoZimmetHareket h
         where h.envanter.envanterTuru = com.stoktakip.enums.EnvanterTuru.SARF
           and upper(h.tur) in :girisTurleri
           and h.gidecegiDepo is not null
@@ -72,7 +72,7 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
           and (:envanterGuid is null or h.envanter.guid = :envanterGuid)
           and h.silindi = false
           and h.envanter.silindi = false
-        group by h.envanter.guid, h.gidecegiDepo.guid
+        group by h.envanter.guid, h.envanter.envanterAdi, h.gidecegiDepo.guid, h.gidecegiDepo.ad
         """)
     List<Object[]> sumSarfGiris(
         @Param("girisTurleri") Collection<String> girisTurleri,
@@ -81,7 +81,7 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
     );
 
     @Query("""
-        select h.envanter.guid, h.mevcutDepo.guid, sum(abs(h.adet)) from DepoZimmetHareket h
+        select h.envanter.guid, h.envanter.envanterAdi, h.mevcutDepo.guid, h.mevcutDepo.ad, sum(abs(h.adet)) from DepoZimmetHareket h
         where h.envanter.envanterTuru = com.stoktakip.enums.EnvanterTuru.SARF
           and upper(h.tur) in :cikisTurleri
           and h.mevcutDepo is not null
@@ -89,7 +89,7 @@ public interface DepoZimmetHareketRepository extends SoftDeleteRepository<DepoZi
           and (:envanterGuid is null or h.envanter.guid = :envanterGuid)
           and h.silindi = false
           and h.envanter.silindi = false
-        group by h.envanter.guid, h.mevcutDepo.guid
+        group by h.envanter.guid, h.envanter.envanterAdi, h.mevcutDepo.guid, h.mevcutDepo.ad
         """)
     List<Object[]> sumSarfCikis(
         @Param("cikisTurleri") Collection<String> cikisTurleri,

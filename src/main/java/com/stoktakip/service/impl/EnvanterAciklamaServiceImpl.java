@@ -8,6 +8,7 @@ import com.stoktakip.exception.BusinessRuleException;
 import com.stoktakip.exception.ResourceNotFoundException;
 import com.stoktakip.repository.EnvanterAciklamaRepository;
 import com.stoktakip.repository.EnvanterRepository;
+import com.stoktakip.service.Guidler;
 import com.stoktakip.service.EnvanterAciklamaService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,7 +57,7 @@ public class EnvanterAciklamaServiceImpl implements EnvanterAciklamaService {
     @Transactional
     public void delete(String envanterGuid, String aciklamaGuid) {
         Envanter envanter = findEnvanter(envanterGuid);
-        String id = id(aciklamaGuid, "aciklamaGuid");
+        String id = Guidler.zorunlu(aciklamaGuid, "aciklamaGuid");
         EnvanterAciklama aciklama = repository.findById(id)
             .filter(item -> item.getEnvanter() != null
                 && envanter.getGuid().equals(item.getEnvanter().getGuid()))
@@ -65,7 +66,7 @@ public class EnvanterAciklamaServiceImpl implements EnvanterAciklamaService {
     }
 
     private Envanter findEnvanter(String guid) {
-        String id = id(guid, "envanterGuid");
+        String id = Guidler.zorunlu(guid, "envanterGuid");
         return envanterRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Envanter bulunamadı: " + id));
     }
@@ -75,10 +76,5 @@ public class EnvanterAciklamaServiceImpl implements EnvanterAciklamaService {
             aciklama.getEnvanter() == null ? null : aciklama.getEnvanter().getGuid(),
             aciklama.getNotMetni(), aciklama.getZimmetliPersonelMetni(), aciklama.getEkleyen(),
             aciklama.getEkleyenPersonel(), aciklama.getOlusturmaTarihi());
-    }
-
-    private static String id(String value, String field) {
-        if (value == null || value.isBlank()) throw new BusinessRuleException(field + " zorunludur");
-        return value.trim();
     }
 }

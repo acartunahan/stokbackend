@@ -8,12 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface AparatRepository extends SoftDeleteRepository<Aparat, String> {
     @Override
-    @EntityGraph(attributePaths = "envanter")
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay"})
     @Query("select a from Aparat a where a.silindi = false")
     List<Aparat> findAll();
 
     @Override
-    @EntityGraph(attributePaths = "envanter")
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay"})
     @Query("select a from Aparat a where a.guid = :guid and a.silindi = false")
     Optional<Aparat> findById(String guid);
 }

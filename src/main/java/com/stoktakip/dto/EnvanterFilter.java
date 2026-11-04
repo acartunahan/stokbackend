@@ -14,4 +14,13 @@ public record EnvanterFilter(
     String barkod,
     String q
 ) {
+    /** Verilen filtreyi (boş olabilir) koruyup depo koşulunu ekler. */
+    public static EnvanterFilter depoIle(EnvanterFilter filter, String depoGuid) {
+        if (filter == null) {
+            return new EnvanterFilter(null, null, null, depoGuid, null, null, null, null, null, null);
+        }
+        return new EnvanterFilter(filter.kategoriGuid(), filter.markaGuid(), filter.modelGuid(), depoGuid,
+            filter.firmaGuid(), filter.envanterTuru(), filter.seriNo(), filter.demirbasNumarasi(),
+            filter.barkod(), filter.q());
+    }
 }

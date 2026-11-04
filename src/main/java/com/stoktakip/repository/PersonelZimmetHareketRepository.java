@@ -28,7 +28,7 @@ public interface PersonelZimmetHareketRepository extends SoftDeleteRepository<Pe
         @Param("enGecTarih") LocalDateTime enGecTarih
     );
 
-    @EntityGraph(attributePaths = {"envanter"})
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay"})
     @Query("""
         select h from PersonelZimmetHareket h
         where h.envanter.guid = :guid

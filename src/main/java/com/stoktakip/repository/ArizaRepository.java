@@ -15,12 +15,12 @@ import org.springframework.data.repository.query.Param;
 public interface ArizaRepository extends SoftDeleteRepository<Ariza, String>,
     JpaSpecificationExecutor<Ariza> {
 
-    @EntityGraph(attributePaths = "envanter")
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay"})
     @Query("select a from Ariza a where a.guid = :guid and a.silindi = false")
     Optional<Ariza> findDetailByGuid(@Param("guid") String guid);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @EntityGraph(attributePaths = "envanter")
+    @EntityGraph(attributePaths = {"envanter", "envanter.detay"})
     @Query("select a from Ariza a where a.guid = :guid and a.silindi = false")
     Optional<Ariza> findByGuidForUpdate(@Param("guid") String guid);
 

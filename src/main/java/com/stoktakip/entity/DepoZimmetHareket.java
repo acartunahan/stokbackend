@@ -66,6 +66,22 @@ public class DepoZimmetHareket extends BaseEntity {
     @Column(name = "ISLEM_YAPAN_PERSONEL", length = 100)
     private String islemYapanPersonel;
 
+    /** Zimmet türünü envanterin türünden alan yeni bir depo hareketi oluşturur. */
+    public static DepoZimmetHareket yeni(
+        Envanter envanter, ZimmetHareketTipi hareketTipi, String tur, Long adet,
+        Depo mevcutDepo, Depo gidecegiDepo
+    ) {
+        DepoZimmetHareket hareket = new DepoZimmetHareket();
+        hareket.setEnvanter(envanter);
+        hareket.setHareketTipi(hareketTipi);
+        hareket.setZimmetTuru(envanter.getEnvanterTuru().name());
+        hareket.setTur(tur);
+        hareket.setAdet(adet);
+        hareket.setMevcutDepo(mevcutDepo);
+        hareket.setGidecegiDepo(gidecegiDepo);
+        return hareket;
+    }
+
     public Long getId() {
         return id;
     }
