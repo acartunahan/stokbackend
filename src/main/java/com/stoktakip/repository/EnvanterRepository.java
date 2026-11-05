@@ -40,4 +40,12 @@ public interface EnvanterRepository extends SoftDeleteRepository<Envanter, Strin
 
     @Query("select count(e) from Envanter e where e.envanterTuru = :tur and e.silindi = false")
     long countAktifByTur(@Param("tur") EnvanterTuru tur);
+
+    @Query("""
+        select count(e) > 0 from Envanter e
+        where lower(e.barkod) = lower(:barkod)
+          and e.silindi = false
+          and (:haricGuid is null or e.guid <> :haricGuid)
+        """)
+    boolean existsAktifBarkod(@Param("barkod") String barkod, @Param("haricGuid") String haricGuid);
 }

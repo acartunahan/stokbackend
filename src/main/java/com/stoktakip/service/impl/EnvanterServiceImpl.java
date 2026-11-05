@@ -239,10 +239,22 @@ public class EnvanterServiceImpl implements EnvanterService {
         envanter.setModel(model);
         envanter.setDemirbasNumarasi(demirbasNo);
         envanter.setSeriNo(seriNo);
-        envanter.setBarkod(barkod);
+        envanter.setBarkod(barkodDogrula(envanter, barkod));
         envanter.setSube(sube);
         envanter.setAciklama(aciklama);
         envanter.setIlSubeDaireBaskanlikNumarasi(birimNo);
+    }
+
+    // Eski sistemden aynı barkodla gelmiş kayıtlar, barkodu değiştirilmediği sürece güncellenebilir.
+    private String barkodDogrula(Envanter envanter, String barkod) {
+        String yeniBarkod = hasText(barkod) ? barkod.trim() : null;
+        if (yeniBarkod == null || yeniBarkod.equalsIgnoreCase(envanter.getBarkod())) {
+            return yeniBarkod;
+        }
+        if (repository.existsAktifBarkod(yeniBarkod, envanter.getGuid())) {
+            throw new BusinessRuleException("Bu barkod başka bir envanterde kullanılıyor: " + yeniBarkod);
+        }
+        return yeniBarkod;
     }
 
     private Depo depo(String guid) {
